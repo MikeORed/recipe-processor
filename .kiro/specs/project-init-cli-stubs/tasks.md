@@ -54,12 +54,12 @@ Scaffold the Heirloom project from scratch: configuration files, hexagonal direc
 - [x] 5. Checkpoint - Verify project compiles
   - Ensure `npm install` and `npm run build` succeed. Ask the user if questions arise.
 
-- [ ] 6. Implement CLI command routing and stub handlers
-  - [ ] 6.1 Create `src/adapters/inbound/stub-handler.ts` with `createStubHandler` factory function
+- [x] 6. Implement CLI command routing and stub handlers
+  - [x] 6.1 Create `src/adapters/inbound/stub-handler.ts` with `createStubHandler` factory function
     - Export a function that takes a command name string and returns a `CommandHandler` that prints `{command} is not implemented yet` to stdout
     - _Requirements: 5.7_
 
-  - [ ] 6.2 Create `src/adapters/inbound/cli.ts` with `CommandHandler` type, command registry `Map<string, CommandHandler>`, `printHelp()`, and `runCli(argv)` function
+  - [x] 6.2 Create `src/adapters/inbound/cli.ts` with `CommandHandler` type, command registry `Map<string, CommandHandler>`, `printHelp()`, and `runCli(argv)` function
     - Register all six commands: `init`, `ingest`, `transcribe`, `export`, `jobs`, `use`
     - No arguments → print help, exit 0
     - Unknown command → print error to stderr, print help to stdout, set `process.exitCode = 1`
@@ -67,29 +67,29 @@ Scaffold the Heirloom project from scratch: configuration files, hexagonal direc
     - Wrap handler call in try/catch; on error print message to stderr and set `process.exitCode = 1`
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-  - [ ] 6.3 Create the six command handler files in `src/adapters/inbound/`
+  - [x] 6.3 Create the six command handler files in `src/adapters/inbound/`
     - `init-handler.ts`, `ingest-handler.ts`, `transcribe-handler.ts`, `export-handler.ts`, `jobs-handler.ts`, `use-handler.ts`
     - Each uses `createStubHandler` to produce its handler and exports it as a named export
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
 
-  - [ ] 6.4 Create CLI entry point `bin/heirloom.ts`
+  - [x] 6.4 Create CLI entry point `bin/heirloom.ts`
     - Import and call `runCli(process.argv.slice(2))` from `src/adapters/inbound/cli.ts`
     - _Requirements: 2.1, 4.1_
 
-- [ ] 7. Implement CDK stacks
-  - [ ] 7.1 Create `infra/stateful/stateful-stack.ts` with empty `StatefulStack` extending `cdk.Stack`
+- [x] 7. Implement CDK stacks
+  - [x] 7.1 Create `infra/stateful/stateful-stack.ts` with empty `StatefulStack` extending `cdk.Stack`
     - _Requirements: 3.2_
 
-  - [ ] 7.2 Create `infra/stateless/stateless-stack.ts` with empty `StatelessStack` extending `cdk.Stack`
+  - [x] 7.2 Create `infra/stateless/stateless-stack.ts` with empty `StatelessStack` extending `cdk.Stack`
     - _Requirements: 3.3_
 
-  - [ ] 7.3 Create `infra/app.ts` CDK app entry point that instantiates both stacks
+  - [x] 7.3 Create `infra/app.ts` CDK app entry point that instantiates both stacks
     - _Requirements: 3.4_
 
-  - [ ] 7.4 Create `cdk.json` pointing to the CDK app entry point
+  - [x] 7.4 Create `cdk.json` pointing to the CDK app entry point
     - _Requirements: 3.1_
 
-- [ ] 8. Checkpoint - Verify build and CLI routing
+- [x] 8. Checkpoint - Verify build and CLI routing
   - Ensure `npm run build` succeeds, `npx tsx bin/heirloom.ts` prints help, and `npx tsx bin/heirloom.ts init` prints "init is not implemented yet". Ask the user if questions arise.
 
 - [ ] 9. Write unit tests for CLI and stub handlers
