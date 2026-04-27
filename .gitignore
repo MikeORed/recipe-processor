@@ -11,6 +11,9 @@ out/
 *.tmp
 tmp/
 
+# Jobs (local image landing zones)
+jobs/
+
 # Environment variables
 .env
 .env.*
