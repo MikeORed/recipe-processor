@@ -1,0 +1,36 @@
+{
+  "name": "heirloom",
+  "version": "0.1.0",
+  "description": "CLI tool that digitizes handwritten and printed family recipes from photographs into structured, searchable data",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "clean": "rm -rf dist",
+    "init": "npx tsx bin/heirloom.ts init",
+    "ingest": "npx tsx bin/heirloom.ts ingest",
+    "transcribe": "npx tsx bin/heirloom.ts transcribe",
+    "export": "npx tsx bin/heirloom.ts export",
+    "jobs": "npx tsx bin/heirloom.ts jobs",
+    "use": "npx tsx bin/heirloom.ts use"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.200.0",
+    "constructs": "^10.4.2",
+    "convict": "^6.2.4",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/convict": "^6.1.6",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.15.21",
+    "fast-check": "^4.1.1",
+    "jest": "^30.0.4",
+    "ts-jest": "^29.4.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

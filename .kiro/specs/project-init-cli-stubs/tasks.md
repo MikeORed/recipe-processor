@@ -6,34 +6,34 @@ Scaffold the Heirloom project from scratch: configuration files, hexagonal direc
 
 ## Tasks
 
-- [ ] 1. Create project configuration files
-  - [ ] 1.1 Create `package.json` with name `heirloom`, type `module`, engine constraint `node >=22.0.0`, and all required dependencies/devDependencies (`tsc`, `tsx`, `jest`, `ts-jest`, `typescript`, `zod`, `convict`, `fast-check`, `aws-cdk-lib`, `constructs`, `@types/node`, `@types/convict`)
+- [x] 1. Create project configuration files
+  - [x] 1.1 Create `package.json` with name `heirloom`, type `module`, engine constraint `node >=22.0.0`, and all required dependencies/devDependencies (`tsc`, `tsx`, `jest`, `ts-jest`, `typescript`, `zod`, `convict`, `fast-check`, `aws-cdk-lib`, `constructs`, `@types/node`, `@types/convict`)
     - Include npm scripts: `build` (tsc), `test` (jest), `clean` (rm -rf dist), `init`, `ingest`, `transcribe`, `export`, `jobs`, `use` (each running `npx tsx bin/heirloom.ts <command>`)
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9_
 
-  - [ ] 1.2 Create `tsconfig.json` with strict mode, ES2022 target, NodeNext module resolution, and appropriate compiler options
+  - [x] 1.2 Create `tsconfig.json` with strict mode, ES2022 target, NodeNext module resolution, and appropriate compiler options
     - _Requirements: 1.10_
 
-  - [ ] 1.3 Create Jest configuration (jest.config.ts or in package.json) using ts-jest transformer, discovering `**/*.unit.ts`, `**/*.pbt.ts`, and `**/test/**/*.test.ts` patterns
+  - [x] 1.3 Create Jest configuration (jest.config.ts or in package.json) using ts-jest transformer, discovering `**/*.unit.ts`, `**/*.pbt.ts`, and `**/test/**/*.test.ts` patterns
     - _Requirements: 1.11_
 
-  - [ ] 1.4 Create `.gitignore` including `node_modules/`, `dist/`, `jobs/`, and other standard entries
+  - [x] 1.4 Create `.gitignore` including `node_modules/`, `dist/`, `jobs/`, and other standard entries
     - _Requirements: 2.9_
 
-- [ ] 2. Set up directory structure and barrel files
-  - [ ] 2.1 Create domain barrel files: `src/domain/ports/index.ts`, `src/domain/models/index.ts`, `src/domain/services/index.ts`
+- [x] 2. Set up directory structure and barrel files
+  - [x] 2.1 Create domain barrel files: `src/domain/ports/index.ts`, `src/domain/models/index.ts`, `src/domain/services/index.ts`
     - Each file contains only a comment: `// Barrel file — exports will be added by feature specs`
     - _Requirements: 2.3_
 
-  - [ ] 2.2 Create `src/adapters/outbound/index.ts` barrel file
+  - [x] 2.2 Create `src/adapters/outbound/index.ts` barrel file
     - Same placeholder comment pattern
     - _Requirements: 2.5_
 
-  - [ ] 2.3 Create empty `test/` directory with a `.gitkeep` file
+  - [x] 2.3 Create empty `test/` directory with a `.gitkeep` file
     - _Requirements: 2.8_
 
-- [ ] 3. Implement shared error infrastructure
-  - [ ] 3.1 Create `src/shared/errors.ts` with `HeirloomError` class extending `Error`
+- [x] 3. Implement shared error infrastructure
+  - [x] 3.1 Create `src/shared/errors.ts` with `HeirloomError` class extending `Error`
     - Accept `message: string` and optional `cause: unknown` parameters
     - Pass cause via the standard `Error` options bag `{ cause }`
     - Set `this.name` to `this.constructor.name`
@@ -44,14 +44,14 @@ Scaffold the Heirloom project from scratch: configuration files, hexagonal direc
     - For arbitrary message strings and cause values, verify: (a) instanceof Error, (b) .message equals input, (c) .cause equals input, (d) .name equals "HeirloomError"
     - **Validates: Requirements 6.1, 6.2, 6.3**
 
-- [ ] 4. Implement Convict configuration module
-  - [ ] 4.1 Create `src/config/config.ts` with Convict schema defining `aws.region`, `s3.bucketName`, `dynamodb.recipesTableName`, `dynamodb.jobsTableName`
+- [x] 4. Implement Convict configuration module
+  - [x] 4.1 Create `src/config/config.ts` with Convict schema defining `aws.region`, `s3.bucketName`, `dynamodb.recipesTableName`, `dynamodb.jobsTableName`
     - Provide sensible defaults for local development
     - Allow environment variable overrides: `HEIRLOOM_AWS_REGION`, `HEIRLOOM_BUCKET_NAME`, `HEIRLOOM_RECIPES_TABLE`, `HEIRLOOM_JOBS_TABLE`
     - Call `config.validate({ allowed: 'strict' })` and export the config object as default
     - _Requirements: 7.1, 7.2, 7.3_
 
-- [ ] 5. Checkpoint - Verify project compiles
+- [x] 5. Checkpoint - Verify project compiles
   - Ensure `npm install` and `npm run build` succeed. Ask the user if questions arise.
 
 - [ ] 6. Implement CLI command routing and stub handlers
