@@ -92,14 +92,14 @@ Scaffold the Heirloom project from scratch: configuration files, hexagonal direc
 - [x] 8. Checkpoint - Verify build and CLI routing
   - Ensure `npm run build` succeeds, `npx tsx bin/heirloom.ts` prints help, and `npx tsx bin/heirloom.ts init` prints "init is not implemented yet". Ask the user if questions arise.
 
-- [ ] 9. Write unit tests for CLI and stub handlers
-  - [ ] 9.1 Create `src/adapters/inbound/cli.unit.ts` with tests for:
+- [x] 9. Write unit tests for CLI and stub handlers
+  - [x] 9.1 Create `src/adapters/inbound/cli.unit.ts` with tests for:
     - No-argument invocation displays help message
     - Unknown command prints error to stderr and help to stdout, sets exitCode to 1
     - Each of the six recognized commands routes to its handler
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-  - [ ] 9.2 Create unit test files for each command handler stub
+  - [x] 9.2 Create unit test files for each command handler stub
     - `init-handler.unit.ts`, `ingest-handler.unit.ts`, `transcribe-handler.unit.ts`, `export-handler.unit.ts`, `jobs-handler.unit.ts`, `use-handler.unit.ts`
     - Each verifies the handler prints `{command} is not implemented yet` to stdout
     - _Requirements: 8.1, 8.2, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
@@ -115,7 +115,7 @@ Scaffold the Heirloom project from scratch: configuration files, hexagonal direc
     - For arbitrary strings not in `{init, ingest, transcribe, export, jobs, use}`, `runCli([unknownCommand])` writes error to stderr containing the unknown command, writes help to stdout, and sets `process.exitCode` to 1
     - **Validates: Requirements 4.2**
 
-- [ ] 11. Final checkpoint - Ensure all tests pass
+- [x] 11. Final checkpoint - Ensure all tests pass
   - Run `npm run build` and `npm run test`. Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
