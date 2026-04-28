@@ -108,8 +108,8 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
     - Test `validateJobName` with valid and invalid names
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 3.1, 3.4, 4.1, 4.2_
 
-- [ ] 6. Implement IngestService
-  - [ ] 6.1 Create `src/domain/services/ingest-service.ts` with the `IngestService` class
+- [x] 6. Implement IngestService
+  - [x] 6.1 Create `src/domain/services/ingest-service.ts` with the `IngestService` class
     - Constructor takes `FileSystemPort`
     - Implement `ingest(jobDir: string): Promise<{ discovered: number; total: number }>` — scan `<jobDir>/images/` for supported extensions, read file modified timestamps via `FileSystemPort.getFileModifiedTime`, read existing `manifest.csv` if present, merge new entries preserving existing annotations (`recipeNumber`, `source`) while updating `modified` timestamps, sort by modified date ascending, write result, return counts
     - Use `SUPPORTED_IMAGE_EXTENSIONS` from domain models to filter files
@@ -117,24 +117,24 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
     - Throw `HeirloomError` if no image files found
     - _Requirements: 5.1, 5.2, 5.3, 5.5, 5.7, 5.8_
 
-  - [ ] 6.2 Write property tests for IngestService (`src/domain/services/ingest-service.pbt.ts`)
+  - [x] 6.2 Write property tests for IngestService (`src/domain/services/ingest-service.pbt.ts`)
     - **Property 7: Ingest produces a correct manifest from image files**
     - **Property 8: Manifest merge preserves annotations and avoids duplicates**
     - Use mock `FileSystemPort` with configurable directory listings, file contents, and file modified times
     - **Validates: Requirements 5.1, 5.2, 5.3, 5.7, 5.8**
 
-  - [ ] 6.3 Write unit tests for IngestService (`src/domain/services/ingest-service.unit.ts`)
+  - [x] 6.3 Write unit tests for IngestService (`src/domain/services/ingest-service.unit.ts`)
     - Test fresh ingest with mixed image and non-image files
     - Test merge with existing manifest preserving annotations (`recipeNumber`, `source`)
     - Test no-images error case
     - Test sorting by modified date ascending
     - _Requirements: 5.1, 5.2, 5.3, 5.5, 5.7, 5.8_
 
-  - [ ] 6.4 Update `src/domain/services/index.ts` barrel file
+  - [x] 6.4 Update `src/domain/services/index.ts` barrel file
     - Re-export from `./job-service.js`, `./ingest-service.js`, and `./csv-utils.js`
     - _Requirements: 7.4_
 
-- [ ] 7. Checkpoint — Verify domain layer
+- [x] 7. Checkpoint — Verify domain layer
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 8. Implement inbound handlers
