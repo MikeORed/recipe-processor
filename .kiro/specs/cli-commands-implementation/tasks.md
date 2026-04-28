@@ -58,31 +58,31 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
     - Re-export `NodeFileSystemAdapter` from `./node-file-system-adapter.js`
     - _Requirements: 7.2_
 
-- [ ] 3. Implement CSV utilities
-  - [ ] 3.1 Create `src/domain/services/csv-utils.ts`
+- [x] 3. Implement CSV utilities
+  - [x] 3.1 Create `src/domain/services/csv-utils.ts`
     - Define `MANIFEST_COLUMNS` constant array: `['file', 'modified', 'recipe_number', 'source']`
     - Implement `serializeManifest(entries: ManifestEntry[]): string` — RFC 4180 CSV with header row, LF line endings, proper quoting for commas/quotes/newlines. Map camelCase fields (`recipeNumber`) to snake_case CSV columns (`recipe_number`).
     - Implement `parseManifest(csv: string): ManifestEntry[]` — parse CSV back to `ManifestEntry[]`, handle quoted fields, map snake_case columns back to camelCase fields
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-  - [ ] 3.2 Write property test for CSV round-trip (`src/domain/services/csv-utils.pbt.ts`)
+  - [x] 3.2 Write property test for CSV round-trip (`src/domain/services/csv-utils.pbt.ts`)
     - **Property 9: CSV serialization round-trip**
     - Generate arbitrary arrays of `ManifestEntry` objects (including special characters: commas, quotes, newlines in `source` field, valid ISO timestamps for `modified`)
     - Verify `parseManifest(serializeManifest(entries))` deeply equals the original input
     - **Validates: Requirements 6.1, 6.2, 6.3, 6.4**
 
-  - [ ] 3.3 Write unit tests for CSV utilities (`src/domain/services/csv-utils.unit.ts`)
+  - [x] 3.3 Write unit tests for CSV utilities (`src/domain/services/csv-utils.unit.ts`)
     - Test header row is `file,modified,recipe_number,source`
     - Test quoting of fields with commas, double quotes, and newlines
     - Test empty entries array produces header-only output
     - Test round-trip with typical manifest data (filenames, ISO timestamps, recipe numbers, source names)
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 4. Checkpoint — Verify foundation layers
+- [x] 4. Checkpoint — Verify foundation layers
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Implement JobService
-  - [ ] 5.1 Create `src/domain/services/job-service.ts` with the `JobService` class
+- [x] 5. Implement JobService
+  - [x] 5.1 Create `src/domain/services/job-service.ts` with the `JobService` class
     - Constructor takes `FileSystemPort` and `jobsRoot` (default `'jobs'`)
     - Implement `validateJobName(name: string): void` — parse with `jobNameSchema`, throw `HeirloomError` on failure
     - Implement `createJob(name: string): Promise<void>` — validate name, check if job dir exists (throw if so), create `jobs/<name>/images/`
@@ -91,7 +91,7 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
     - Implement `setActiveJob(name: string): Promise<void>` — validate name, check job dir exists (throw if not), write name to `jobs/.active-job`
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.5, 3.1, 3.4, 4.1, 4.2, 4.5_
 
-  - [ ] 5.2 Write property tests for JobService (`src/domain/services/job-service.pbt.ts`)
+  - [x] 5.2 Write property tests for JobService (`src/domain/services/job-service.pbt.ts`)
     - **Property 2: Init creates the correct directory structure**
     - **Property 3: Init rejects duplicate jobs**
     - **Property 4: Job status derivation from filesystem state**
@@ -100,7 +100,7 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
     - Use mock `FileSystemPort` that records calls and returns configurable responses
     - **Validates: Requirements 2.1, 2.2, 2.5, 3.4, 4.1, 4.2, 4.5**
 
-  - [ ] 5.3 Write unit tests for JobService (`src/domain/services/job-service.unit.ts`)
+  - [x] 5.3 Write unit tests for JobService (`src/domain/services/job-service.unit.ts`)
     - Test `createJob` success path and duplicate rejection
     - Test `listJobs` with various filesystem states (empty, mixed statuses, with active job)
     - Test `getActiveJob` when set and when not set
