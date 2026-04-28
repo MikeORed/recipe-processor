@@ -15,7 +15,7 @@ export type JobName = z.infer<typeof jobNameSchema>;
 
 // --- Job Status ---
 
-export const jobStatusSchema = z.enum(['empty', 'initialized', 'ingested']);
+export const jobStatusSchema = z.enum(['empty', 'initialized', 'ingested', 'transcribing', 'transcribed']);
 
 export type JobStatus = z.infer<typeof jobStatusSchema>;
 

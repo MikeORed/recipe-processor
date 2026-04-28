@@ -6,18 +6,18 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
 
 ## Tasks
 
-- [ ] 1. Extend domain models and port interfaces
-  - [ ] 1.1 Extend `jobStatusSchema` with `transcribing` and `transcribed` statuses
+- [x] 1. Extend domain models and port interfaces
+  - [x] 1.1 Extend `jobStatusSchema` with `transcribing` and `transcribed` statuses
     - In `src/domain/models/job.ts`, update the `jobStatusSchema` enum to include `'transcribing'` and `'transcribed'`
     - Verify existing code that references `JobStatus` still compiles
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-  - [ ] 1.2 Create the Recipe domain model
+  - [x] 1.2 Create the Recipe domain model
     - Create `src/domain/models/recipe.ts` with `confidenceScoreSchema`, `recipeSchema`, and `Recipe` type as defined in the design
     - Export from `src/domain/models/index.ts`
     - _Requirements: 10.1, 10.2, 10.3_
 
-  - [ ]* 1.3 Write unit tests for the Recipe model
+  - [x] 1.3 Write unit tests for the Recipe model
     - Create `src/domain/models/recipe.unit.ts`
     - Test schema accepts valid Recipe objects
     - Test schema rejects missing required fields (title, ingredients, instructions, jobName, recipeNumber)
@@ -26,21 +26,21 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Test default value for `notes` field
     - _Requirements: 10.1, 10.2, 10.3_
 
-  - [ ]* 1.4 Write property test for confidence score boundary validation
+  - [x] 1.4 Write property test for confidence score boundary validation
     - Create `src/domain/models/recipe.pbt.ts`
     - **Property 5: Confidence score boundary validation**
     - Generate random numbers with `fast-check`, verify `recipeSchema` accepts scores in [0, 1] and rejects scores outside that range
     - Minimum 100 iterations
     - **Validates: Requirements 10.3**
 
-  - [ ]* 1.5 Write property test for Recipe JSON round-trip
+  - [x] 1.5 Write property test for Recipe JSON round-trip
     - In `src/domain/models/recipe.pbt.ts`
     - **Property 6: Recipe JSON round-trip**
     - Generate valid Recipe objects with `fast-check`, serialize via `JSON.stringify`, parse back through `recipeSchema`, verify deep equality
     - Minimum 100 iterations
     - **Validates: Requirements 10.4**
 
-  - [ ] 1.6 Create domain port interfaces
+  - [x] 1.6 Create domain port interfaces
     - Create `src/domain/ports/object-store-port.ts` with `ObjectStore` interface (`upload`, `exists`)
     - Create `src/domain/ports/ocr-provider-port.ts` with `TextBlock`, `OCRResult`, and `OCRProvider` interfaces
     - Create `src/domain/ports/structure-extractor-port.ts` with `ExtractionInput` and `StructureExtractor` interfaces
@@ -66,7 +66,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Export from `src/domain/services/index.ts`
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 4.1, 4.4, 5.1, 5.6, 6.1, 6.2, 6.3, 6.4, 7.1, 7.2, 7.3, 7.4, 13.1, 13.2, 13.3_
 
-  - [ ]* 2.2 Write unit tests for TranscribeService
+  - [ ] 2.2 Write unit tests for TranscribeService
     - Create `src/domain/services/transcribe-service.unit.ts`
     - Mock all five port dependencies
     - Test manifest reading and filtering (empty recipeNumber entries skipped)
@@ -83,7 +83,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Test re-run on `transcribed` job re-processes all entries
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 4.1, 4.4, 5.1, 5.6, 6.1, 6.4, 7.1, 7.2, 7.3, 7.4, 13.1, 13.2, 13.3_
 
-  - [ ]* 2.3 Write property test for manifest filtering and grouping
+  - [ ] 2.3 Write property test for manifest filtering and grouping
     - Create `src/domain/services/transcribe-service.pbt.ts`
     - **Property 1: Manifest filtering and grouping**
     - Generate random manifests with a mix of empty and non-empty `recipeNumber` fields
@@ -91,28 +91,28 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Minimum 100 iterations
     - **Validates: Requirements 2.2, 2.4**
 
-  - [ ]* 2.4 Write property test for upload key pattern
+  - [ ] 2.4 Write property test for upload key pattern
     - In `src/domain/services/transcribe-service.pbt.ts`
     - **Property 2: Upload key pattern**
     - Generate random job names and image filenames, verify key equals `<jobName>/<filename>`
     - Minimum 100 iterations
     - **Validates: Requirements 3.1**
 
-  - [ ]* 2.5 Write property test for idempotent upload skip
+  - [ ] 2.5 Write property test for idempotent upload skip
     - In `src/domain/services/transcribe-service.pbt.ts`
     - **Property 3: Idempotent upload skip**
     - Generate random exists/not-exists states for image keys, verify upload is called only when key does not exist
     - Minimum 100 iterations
     - **Validates: Requirements 3.3, 13.2**
 
-  - [ ]* 2.6 Write property test for recipe metadata from manifest
+  - [ ] 2.6 Write property test for recipe metadata from manifest
     - In `src/domain/services/transcribe-service.pbt.ts`
     - **Property 4: Recipe metadata from manifest**
     - Generate random manifest entry groups with jobName, recipeNumber, source; verify persisted Recipe carries the same values
     - Minimum 100 iterations
     - **Validates: Requirements 6.3**
 
-  - [ ]* 2.7 Write property test for fault isolation across recipe groups
+  - [ ] 2.7 Write property test for fault isolation across recipe groups
     - In `src/domain/services/transcribe-service.pbt.ts`
     - **Property 7: Fault isolation across recipe groups**
     - Generate random sets of recipe groups where a subset fail during OCR or extraction; verify all non-failing groups are still processed and persisted
@@ -131,7 +131,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - `exists()`: HEAD object, return true if 200, false if `NotFound`
     - _Requirements: 9.1, 9.5_
 
-  - [ ]* 4.2 Write unit tests for S3Adapter
+  - [ ] 4.2 Write unit tests for S3Adapter
     - Create `src/adapters/outbound/s3-adapter.unit.ts`
     - Mock `@aws-sdk/client-s3` client
     - Test `upload()` sends correct bucket, key, and body
@@ -147,7 +147,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Read S3 bucket name and region from convict config
     - _Requirements: 9.2, 9.5_
 
-  - [ ]* 4.4 Write unit tests for TextractAdapter
+  - [ ] 4.4 Write unit tests for TextractAdapter
     - Create `src/adapters/outbound/textract-adapter.unit.ts`
     - Mock `@aws-sdk/client-textract` client
     - Test job start with correct S3 bucket and key
@@ -165,7 +165,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Read model ID and region from convict config
     - _Requirements: 9.3, 9.5_
 
-  - [ ]* 4.6 Write unit tests for BedrockAdapter
+  - [ ] 4.6 Write unit tests for BedrockAdapter
     - Create `src/adapters/outbound/bedrock-adapter.unit.ts`
     - Mock `@aws-sdk/client-bedrock-runtime` client
     - Test prompt construction includes OCR text, recipeNumber, source, jobName
@@ -185,7 +185,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Export from `src/adapters/outbound/index.ts`
     - _Requirements: 9.4, 9.5_
 
-  - [ ]* 4.8 Write unit tests for DynamoDBAdapter
+  - [ ] 4.8 Write unit tests for DynamoDBAdapter
     - Create `src/adapters/outbound/dynamodb-adapter.unit.ts`
     - Mock `@aws-sdk/lib-dynamodb` client
     - Test `putRecipe()` sends correct table name, PK, SK, and item
@@ -210,7 +210,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Handle unexpected errors → re-throw for CLI runner
     - _Requirements: 1.1, 1.2, 1.3, 12.1, 12.2, 12.3, 12.4, 13.1_
 
-  - [ ]* 6.2 Write unit tests for transcribe-handler
+  - [ ] 6.2 Write unit tests for transcribe-handler
     - Update `src/adapters/inbound/transcribe-handler.unit.ts`
     - Mock `JobService`, `TranscribeService`, and all adapter constructors
     - Test no active job → error message + exit code 1
@@ -238,7 +238,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
       - Bedrock: `InvokeModel` on the configured model ARN
     - _Requirements: 11.5_
 
-  - [ ]* 8.3 Write CDK assertion tests
+  - [ ] 8.3 Write CDK assertion tests
     - Create `test/stateful-stack.test.ts`
     - Assert S3 bucket exists with RETAIN removal policy
     - Assert DynamoDB Recipes table has correct key schema (PK: `jobName`, SK: `recipeNumber`) and RETAIN policy
