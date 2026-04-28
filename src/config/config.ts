@@ -17,6 +17,14 @@ const config = convict({
       env: 'HEIRLOOM_BUCKET_NAME',
     },
   },
+  bedrock: {
+    modelId: {
+      doc: 'Bedrock model ID for structure extraction',
+      format: String,
+      default: 'anthropic.claude-3-haiku-20240307-v1:0',
+      env: 'HEIRLOOM_BEDROCK_MODEL_ID',
+    },
+  },
   dynamodb: {
     recipesTableName: {
       doc: 'DynamoDB table for recipe records',

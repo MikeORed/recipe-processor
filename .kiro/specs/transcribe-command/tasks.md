@@ -119,11 +119,11 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Minimum 100 iterations
     - **Validates: Requirements 13.3**
 
-- [ ] 3. Checkpoint — Core domain layer
+- [x] 3. Checkpoint — Core domain layer
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Implement outbound adapters
-  - [ ] 4.1 Implement S3Adapter
+- [x] 4. Implement outbound adapters
+  - [x] 4.1 Implement S3Adapter
     - Create `src/adapters/outbound/s3-adapter.ts` implementing `ObjectStore`
     - Use `@aws-sdk/client-s3` (`PutObjectCommand`, `HeadObjectCommand`)
     - Read bucket name and region from convict config
@@ -131,7 +131,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - `exists()`: HEAD object, return true if 200, false if `NotFound`
     - _Requirements: 9.1, 9.5_
 
-  - [ ] 4.2 Write unit tests for S3Adapter
+  - [x] 4.2 Write unit tests for S3Adapter
     - Create `src/adapters/outbound/s3-adapter.unit.ts`
     - Mock `@aws-sdk/client-s3` client
     - Test `upload()` sends correct bucket, key, and body
@@ -139,7 +139,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Test config values are read from convict
     - _Requirements: 9.1, 9.5_
 
-  - [ ] 4.3 Implement TextractAdapter
+  - [x] 4.3 Implement TextractAdapter
     - Create `src/adapters/outbound/textract-adapter.ts` implementing `OCRProvider`
     - Use `@aws-sdk/client-textract` (`StartDocumentTextDetection`, `GetDocumentTextDetection`)
     - Async polling: start job, poll until complete, collect LINE blocks
@@ -147,7 +147,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Read S3 bucket name and region from convict config
     - _Requirements: 9.2, 9.5_
 
-  - [ ] 4.4 Write unit tests for TextractAdapter
+  - [x] 4.4 Write unit tests for TextractAdapter
     - Create `src/adapters/outbound/textract-adapter.unit.ts`
     - Mock `@aws-sdk/client-textract` client
     - Test job start with correct S3 bucket and key
@@ -156,7 +156,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Test error handling for failed jobs
     - _Requirements: 9.2, 9.5_
 
-  - [ ] 4.5 Implement BedrockAdapter
+  - [x] 4.5 Implement BedrockAdapter
     - Create `src/adapters/outbound/bedrock-adapter.ts` implementing `StructureExtractor`
     - Use `@aws-sdk/client-bedrock-runtime` (`InvokeModelCommand`)
     - Build 0-shot prompt with OCR text and metadata
@@ -165,7 +165,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Read model ID and region from convict config
     - _Requirements: 9.3, 9.5_
 
-  - [ ] 4.6 Write unit tests for BedrockAdapter
+  - [x] 4.6 Write unit tests for BedrockAdapter
     - Create `src/adapters/outbound/bedrock-adapter.unit.ts`
     - Mock `@aws-sdk/client-bedrock-runtime` client
     - Test prompt construction includes OCR text, recipeNumber, source, jobName
@@ -174,7 +174,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Test Zod validation failure throws `HeirloomError`
     - _Requirements: 9.3, 9.5_
 
-  - [ ] 4.7 Implement DynamoDBAdapter
+  - [x] 4.7 Implement DynamoDBAdapter
     - Create `src/adapters/outbound/dynamodb-adapter.ts` implementing `DataStore`
     - Use `@aws-sdk/lib-dynamodb` (`PutCommand`, `GetCommand`, `QueryCommand`)
     - `putRecipe()`: PutItem to recipes table (PK: `jobName`, SK: `recipeNumber`)
@@ -185,7 +185,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Export from `src/adapters/outbound/index.ts`
     - _Requirements: 9.4, 9.5_
 
-  - [ ] 4.8 Write unit tests for DynamoDBAdapter
+  - [x] 4.8 Write unit tests for DynamoDBAdapter
     - Create `src/adapters/outbound/dynamodb-adapter.unit.ts`
     - Mock `@aws-sdk/lib-dynamodb` client
     - Test `putRecipe()` sends correct table name, PK, SK, and item

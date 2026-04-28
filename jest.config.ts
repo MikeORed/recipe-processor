@@ -21,6 +21,9 @@ const config: Config = {
     '**/*.pbt.ts',
     '**/test/**/*.test.ts',
   ],
+  transformIgnorePatterns: [
+    'node_modules/(?!(@nodable|@aws-sdk|@smithy)/)',
+  ],
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
