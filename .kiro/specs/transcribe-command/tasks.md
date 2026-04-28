@@ -194,11 +194,11 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Test `getJobStatus()` returns status or undefined when not found
     - _Requirements: 9.4, 9.5_
 
-- [ ] 5. Checkpoint — Adapters
+- [x] 5. Checkpoint — Adapters
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Wire up the transcribe-handler
-  - [ ] 6.1 Implement the transcribe-handler
+- [x] 6. Wire up the transcribe-handler
+  - [x] 6.1 Implement the transcribe-handler
     - Replace the stub in `src/adapters/inbound/transcribe-handler.ts`
     - Wire `NodeFileSystemAdapter`, `S3Adapter`, `TextractAdapter`, `BedrockAdapter`, `DynamoDBAdapter` to `TranscribeService`
     - Validate active job exists via `JobService.getActiveJob()`
@@ -210,7 +210,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Handle unexpected errors → re-throw for CLI runner
     - _Requirements: 1.1, 1.2, 1.3, 12.1, 12.2, 12.3, 12.4, 13.1_
 
-  - [ ] 6.2 Write unit tests for transcribe-handler
+  - [x] 6.2 Write unit tests for transcribe-handler
     - Update `src/adapters/inbound/transcribe-handler.unit.ts`
     - Mock `JobService`, `TranscribeService`, and all adapter constructors
     - Test no active job → error message + exit code 1
@@ -219,7 +219,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Test `HeirloomError` from service → prints message + exit code 1
     - _Requirements: 1.1, 1.2, 1.3, 12.1, 12.2, 12.3, 12.4_
 
-- [ ] 7. Checkpoint — CLI handler
+- [x] 7. Checkpoint — CLI handler
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 8. Add CDK infrastructure

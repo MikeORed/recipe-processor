@@ -6,7 +6,6 @@ import type { DataStore } from '../ports/data-store-port.js';
 import type { ManifestEntry } from '../models/index.js';
 import { HeirloomError } from '../../shared/errors.js';
 import { parseManifest } from './csv-utils.js';
-import path from 'node:path';
 
 export interface TranscriptionResult {
   recipesTranscribed: number;
@@ -30,7 +29,11 @@ export class TranscribeService {
    * Reads the manifest CSV, filters and groups entries by recipeNumber,
    * uploads images, runs OCR, extracts structure, and persists recipes.
    */
-  async transcribe(jobName: string, jobDir: string): Promise<TranscriptionResult> {
+  async transcribe(
+    jobName: string,
+    jobDir: string,
+    onProgress?: (recipeNumber: string, index: number, total: number) => void,
+  ): Promise<TranscriptionResult> {
     const startTime = Date.now();
 
     // Read and parse manifest
@@ -56,8 +59,12 @@ export class TranscribeService {
 
     let recipesTranscribed = 0;
     const errors: Array<{ recipeNumber: string; error: string }> = [];
+    const total = groups.size;
+    let index = 0;
 
     for (const [recipeNumber, groupEntries] of groups) {
+      index++;
+      onProgress?.(recipeNumber, index, total);
       try {
         await this.processRecipeGroup(jobName, jobDir, recipeNumber, groupEntries);
         recipesTranscribed++;
