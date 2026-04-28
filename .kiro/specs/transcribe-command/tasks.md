@@ -48,8 +48,8 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Export all new ports from `src/domain/ports/index.ts`
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-- [ ] 2. Implement TranscribeService
-  - [ ] 2.1 Create the TranscribeService with core transcription logic
+- [x] 2. Implement TranscribeService
+  - [x] 2.1 Create the TranscribeService with core transcription logic
     - Create `src/domain/services/transcribe-service.ts`
     - Constructor accepts `FileSystemPort`, `ObjectStore`, `OCRProvider`, `StructureExtractor`, `DataStore`
     - Implement `transcribe(jobName, jobDir)` method:
@@ -66,7 +66,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Export from `src/domain/services/index.ts`
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 4.1, 4.4, 5.1, 5.6, 6.1, 6.2, 6.3, 6.4, 7.1, 7.2, 7.3, 7.4, 13.1, 13.2, 13.3_
 
-  - [ ] 2.2 Write unit tests for TranscribeService
+  - [x] 2.2 Write unit tests for TranscribeService
     - Create `src/domain/services/transcribe-service.unit.ts`
     - Mock all five port dependencies
     - Test manifest reading and filtering (empty recipeNumber entries skipped)
@@ -83,7 +83,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Test re-run on `transcribed` job re-processes all entries
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 4.1, 4.4, 5.1, 5.6, 6.1, 6.4, 7.1, 7.2, 7.3, 7.4, 13.1, 13.2, 13.3_
 
-  - [ ] 2.3 Write property test for manifest filtering and grouping
+  - [x] 2.3 Write property test for manifest filtering and grouping
     - Create `src/domain/services/transcribe-service.pbt.ts`
     - **Property 1: Manifest filtering and grouping**
     - Generate random manifests with a mix of empty and non-empty `recipeNumber` fields
@@ -91,28 +91,28 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Minimum 100 iterations
     - **Validates: Requirements 2.2, 2.4**
 
-  - [ ] 2.4 Write property test for upload key pattern
+  - [x] 2.4 Write property test for upload key pattern
     - In `src/domain/services/transcribe-service.pbt.ts`
     - **Property 2: Upload key pattern**
     - Generate random job names and image filenames, verify key equals `<jobName>/<filename>`
     - Minimum 100 iterations
     - **Validates: Requirements 3.1**
 
-  - [ ] 2.5 Write property test for idempotent upload skip
+  - [x] 2.5 Write property test for idempotent upload skip
     - In `src/domain/services/transcribe-service.pbt.ts`
     - **Property 3: Idempotent upload skip**
     - Generate random exists/not-exists states for image keys, verify upload is called only when key does not exist
     - Minimum 100 iterations
     - **Validates: Requirements 3.3, 13.2**
 
-  - [ ] 2.6 Write property test for recipe metadata from manifest
+  - [x] 2.6 Write property test for recipe metadata from manifest
     - In `src/domain/services/transcribe-service.pbt.ts`
     - **Property 4: Recipe metadata from manifest**
     - Generate random manifest entry groups with jobName, recipeNumber, source; verify persisted Recipe carries the same values
     - Minimum 100 iterations
     - **Validates: Requirements 6.3**
 
-  - [ ] 2.7 Write property test for fault isolation across recipe groups
+  - [x] 2.7 Write property test for fault isolation across recipe groups
     - In `src/domain/services/transcribe-service.pbt.ts`
     - **Property 7: Fault isolation across recipe groups**
     - Generate random sets of recipe groups where a subset fail during OCR or extraction; verify all non-failing groups are still processed and persisted
