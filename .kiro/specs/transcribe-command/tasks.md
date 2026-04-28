@@ -222,15 +222,15 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
 - [x] 7. Checkpoint — CLI handler
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Add CDK infrastructure
-  - [ ] 8.1 Add stateful resources to StatefulStack
+- [x] 8. Add CDK infrastructure
+  - [x] 8.1 Add stateful resources to StatefulStack
     - In `infra/stateful/stateful-stack.ts`, add:
       - S3 bucket (`heirloom-images`) with `RETAIN` removal policy
       - DynamoDB Recipes table (`heirloom-recipes`): PK `jobName` (S), SK `recipeNumber` (S), `RETAIN`
       - DynamoDB Jobs table (`heirloom-jobs`): PK `jobName` (S), `RETAIN`
     - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-  - [ ] 8.2 Add IAM policies to StatelessStack
+  - [x] 8.2 Add IAM policies to StatelessStack
     - In `infra/stateless/stateless-stack.ts`, add scoped IAM policies for:
       - S3: `PutObject`, `GetObject`, `HeadObject` on the images bucket
       - DynamoDB: `PutItem`, `GetItem`, `Query` on recipes and jobs tables
@@ -238,7 +238,7 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
       - Bedrock: `InvokeModel` on the configured model ARN
     - _Requirements: 11.5_
 
-  - [ ] 8.3 Write CDK assertion tests
+  - [x] 8.3 Write CDK assertion tests
     - Create `test/stateful-stack.test.ts`
     - Assert S3 bucket exists with RETAIN removal policy
     - Assert DynamoDB Recipes table has correct key schema (PK: `jobName`, SK: `recipeNumber`) and RETAIN policy
