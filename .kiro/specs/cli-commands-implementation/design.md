@@ -71,13 +71,14 @@ graph TD
 export interface FileSystemPort {
   createDirectory(path: string): Promise<void>;
   exists(path: string): Promise<boolean>;
+  getFileModifiedTime(path: string): Promise<Date>;
   listDirectory(path: string): Promise<string[]>;
   readFile(path: string): Promise<string>;
   writeFile(path: string, content: string): Promise<void>;
 }
 ```
 
-Design decision: The port is intentionally minimal — only the five operations needed by the two domain services. `createDirectory` creates recursively (the adapter handles `{ recursive: true }`). `listDirectory` returns entry names only (not full paths), matching `fs.readdir` semantics.
+Design decision: The port is intentionally minimal — only the six operations needed by the two domain services. `createDirectory` creates recursively (the adapter handles `{ recursive: true }`). `listDirectory` returns entry names only (not full paths), matching `fs.readdir` semantics. `getFileModifiedTime` returns the `mtime` from `fs.stat` — needed by the ingest service to populate the `modified` column and sort by date.
 
 ### Domain Service: `JobService`
 
@@ -114,7 +115,7 @@ export class IngestService {
 }
 ```
 
-- `ingest` scans `<jobDir>/images/` for supported extensions, reads existing `manifest.csv` if present, merges new entries preserving existing annotations, writes the result sorted alphabetically by filename.
+- `ingest` scans `<jobDir>/images/` for supported extensions, reads file modified timestamps, reads existing `manifest.csv` if present, merges new entries preserving existing annotations (`recipe_number`, `source`) while updating `modified` timestamps, writes the result sorted by modified date ascending.
 - Returns counts for CLI output: `discovered` (new images added) and `total` (all manifest rows).
 
 **Supported image extensions:** `.jpg`, `.jpeg`, `.png`, `.tiff`, `.tif`, `.bmp`, `.webp`
@@ -124,7 +125,7 @@ export class IngestService {
 **File:** `src/domain/services/csv-utils.ts`
 
 ```typescript
-export const MANIFEST_COLUMNS = ['filename', 'recipe_name', 'source_collection', 'image_type', 'notes'] as const;
+export const MANIFEST_COLUMNS = ['file', 'modified', 'recipe_number', 'source'] as const;
 
 export function serializeManifest(entries: ManifestEntry[]): string;
 export function parseManifest(csv: string): ManifestEntry[];
@@ -144,6 +145,7 @@ import type { FileSystemPort } from '../../domain/ports/file-system-port.js';
 export class NodeFileSystemAdapter implements FileSystemPort {
   async createDirectory(path: string): Promise<void>;   // fs.mkdir({ recursive: true })
   async exists(path: string): Promise<boolean>;          // fs.access, catch → false
+  async getFileModifiedTime(path: string): Promise<Date>; // fs.stat → mtime
   async listDirectory(path: string): Promise<string[]>;  // fs.readdir
   async readFile(path: string): Promise<string>;         // fs.readFile('utf-8')
   async writeFile(path: string, content: string): Promise<void>; // fs.writeFile
@@ -212,11 +214,10 @@ export type Job = z.infer<typeof jobSchema>;
 
 ```typescript
 export const manifestEntrySchema = z.object({
-  filename: z.string().min(1),
-  recipeName: z.string().default(''),
-  sourceCollection: z.string().default(''),
-  imageType: z.string().default(''),
-  notes: z.string().default(''),
+  file: z.string().min(1),
+  modified: z.string().min(1),
+  recipeNumber: z.string().default(''),
+  source: z.string().default(''),
 });
 export type ManifestEntry = z.infer<typeof manifestEntrySchema>;
 ```
@@ -272,13 +273,13 @@ export const SUPPORTED_IMAGE_EXTENSIONS = new Set([
 
 ### Property 7: Ingest produces a correct manifest from image files
 
-*For any* set of filenames in an images directory, `IngestService.ingest` produces a manifest containing exactly the files with supported image extensions (`.jpg`, `.jpeg`, `.png`, `.tiff`, `.tif`, `.bmp`, `.webp`), one row per file, sorted alphabetically by filename, with `filename` populated and all annotation columns empty.
+*For any* set of filenames in an images directory, `IngestService.ingest` produces a manifest containing exactly the files with supported image extensions (`.jpg`, `.jpeg`, `.png`, `.tiff`, `.tif`, `.bmp`, `.webp`), one row per file, sorted by file modified date ascending, with `file` and `modified` populated and `recipe_number` and `source` columns empty.
 
 **Validates: Requirements 5.1, 5.2, 5.3, 5.8**
 
 ### Property 8: Manifest merge preserves annotations and avoids duplicates
 
-*For any* existing manifest with user-annotated rows and any set of new image filenames, running ingest produces a manifest where: (a) all previously annotated rows retain their annotations, (b) no filename appears more than once, and (c) newly discovered images are added with empty annotation columns.
+*For any* existing manifest with user-annotated rows (`recipe_number`, `source`) and any set of new image filenames, running ingest produces a manifest where: (a) all previously annotated rows retain their `recipe_number` and `source` values, (b) no filename appears more than once, (c) newly discovered images are added with empty annotation columns, and (d) `modified` timestamps are updated to current values for all entries.
 
 **Validates: Requirements 5.7**
 
@@ -317,9 +318,9 @@ All errors follow the existing `HeirloomError` pattern from `src/shared/errors.t
 
 | File | Tests |
 |---|---|
-| `src/domain/models/job.unit.ts` | Zod schema validation for `jobNameSchema`, `jobSchema`, `manifestEntrySchema` |
+| `src/domain/models/job.unit.ts` | Zod schema validation for `jobNameSchema`, `jobSchema`, `manifestEntrySchema` (with `file`, `modified`, `recipeNumber`, `source` fields) |
 | `src/domain/services/job-service.unit.ts` | `createJob`, `listJobs`, `getActiveJob`, `setActiveJob` with mock `FileSystemPort` |
-| `src/domain/services/ingest-service.unit.ts` | `ingest` with mock `FileSystemPort` — fresh ingest, merge, no images, filtering |
+| `src/domain/services/ingest-service.unit.ts` | `ingest` with mock `FileSystemPort` — fresh ingest, merge, no images, filtering, modified-date sorting |
 | `src/domain/services/csv-utils.unit.ts` | `serializeManifest`, `parseManifest` — header, quoting, edge cases |
 | `src/adapters/inbound/init-handler.unit.ts` | Arg parsing, success output, error output |
 | `src/adapters/inbound/jobs-handler.unit.ts` | Listing output, empty state, active job marking |
@@ -345,5 +346,5 @@ Each property test is tagged with a comment:
 ### Test Configuration
 
 - `fast-check` configured with `{ numRuns: 100 }` minimum per property
-- Custom arbitraries for `JobName` (valid pattern strings), `ManifestEntry` (random field values including special characters), and filename sets (mix of image and non-image extensions)
+- Custom arbitraries for `JobName` (valid pattern strings), `ManifestEntry` (random field values including special characters for `source`, plus valid ISO timestamps for `modified`), and filename sets (mix of image and non-image extensions)
 - Mock `FileSystemPort` implementation for all domain service tests — records calls and returns configurable responses

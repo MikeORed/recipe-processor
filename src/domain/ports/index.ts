@@ -1,1 +1,1 @@
-// Barrel file — exports will be added by feature specs
+export type { FileSystemPort } from './file-system-port.js';

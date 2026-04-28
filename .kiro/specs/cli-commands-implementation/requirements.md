@@ -12,7 +12,7 @@ This spec covers the full implementation of four local-filesystem CLI commands â
 - **Job_Directory**: The filesystem directory `jobs/<job-name>/` containing an `images/` subdirectory and optionally a `manifest.csv`
 - **Active_Job**: The currently selected Job, persisted as a `.active-job` file in the `jobs/` directory containing the job name
 - **Manifest**: A CSV file (`manifest.csv`) inside a Job_Directory listing discovered image files with columns for user annotation
-- **Manifest_Entry**: A single row in the Manifest representing one discovered image file
+- **Manifest_Entry**: A single row in the Manifest representing one discovered image file, with columns for grouping images into recipes and attributing their source collection
 - **Image_File**: A file in `jobs/<job-name>/images/` with a supported extension (`.jpg`, `.jpeg`, `.png`, `.tiff`, `.tif`, `.bmp`, `.webp`)
 - **Job_Status**: The current state of a Job, derived from filesystem contents: `initialized` (images/ exists, no manifest), `ingested` (manifest.csv exists), or `empty` (no images in images/)
 - **FileSystem_Port**: A domain port interface defining filesystem operations needed by domain services
@@ -77,13 +77,13 @@ This spec covers the full implementation of four local-filesystem CLI commands â
 #### Acceptance Criteria
 
 1. WHEN a user runs `heirloom ingest` with an Active_Job set, THE Ingest_Handler SHALL scan the Active_Job's `images/` directory for Image_Files
-2. WHEN Image_Files are discovered, THE Ingest_Handler SHALL generate a `manifest.csv` file in the Job_Directory with columns: `filename`, `recipe_name`, `source_collection`, `image_type`, `notes`
-3. THE Manifest SHALL include one Manifest_Entry row per discovered Image_File, with the `filename` column populated and all other columns empty for user annotation
+2. WHEN Image_Files are discovered, THE Ingest_Handler SHALL generate a `manifest.csv` file in the Job_Directory with columns: `file`, `modified`, `recipe_number`, `source`
+3. THE Manifest SHALL include one Manifest_Entry row per discovered Image_File, with the `file` column set to the filename, the `modified` column set to the file's last-modified ISO 8601 timestamp, and the `recipe_number` and `source` columns empty for user annotation
 4. WHEN no Active_Job is set, THEN THE Ingest_Handler SHALL report an error indicating no active job is selected and suggest running `heirloom use <job-name>` first
 5. WHEN the Active_Job's `images/` directory contains no Image_Files, THEN THE Ingest_Handler SHALL report an error indicating no images were found in the images directory
 6. THE Manifest SHALL include a header row as the first line of the CSV
-7. WHEN `heirloom ingest` is run again on a job that already has a `manifest.csv`, THE Ingest_Handler SHALL merge new Image_Files into the existing Manifest without duplicating entries for images already listed, and SHALL preserve user annotations on existing rows
-8. THE Manifest SHALL sort entries alphabetically by filename
+7. WHEN `heirloom ingest` is run again on a job that already has a `manifest.csv`, THE Ingest_Handler SHALL merge new Image_Files into the existing Manifest without duplicating entries for images already listed, and SHALL preserve user annotations (`recipe_number`, `source`) on existing rows while updating the `modified` timestamp
+8. THE Manifest SHALL sort entries by file modified date in ascending order
 
 ### Requirement 6: Manifest CSV Format
 
@@ -91,7 +91,7 @@ This spec covers the full implementation of four local-filesystem CLI commands â
 
 #### Acceptance Criteria
 
-1. THE Ingest_Service SHALL write the Manifest CSV with comma-separated values and a header row containing: `filename,recipe_name,source_collection,image_type,notes`
+1. THE Ingest_Service SHALL write the Manifest CSV with comma-separated values and a header row containing: `file,modified,recipe_number,source`
 2. THE Ingest_Service SHALL quote field values that contain commas, double quotes, or newlines using RFC 4180 quoting rules
 3. THE Ingest_Service SHALL produce a Manifest that, when parsed back, yields the same Manifest_Entry data (round-trip property)
 4. THE Ingest_Service SHALL format the Manifest with one Manifest_Entry per line, using LF line endings
@@ -102,7 +102,7 @@ This spec covers the full implementation of four local-filesystem CLI commands â
 
 #### Acceptance Criteria
 
-1. THE FileSystem_Port SHALL define methods for: creating directories, checking if a path exists, listing directory contents, reading file contents, and writing file contents
+1. THE FileSystem_Port SHALL define methods for: creating directories, checking if a path exists, getting a file's last-modified time, listing directory contents, reading file contents, and writing file contents
 2. THE FileSystem_Adapter SHALL implement the FileSystem_Port using Node.js `fs/promises` APIs
 3. THE FileSystem_Adapter SHALL create parent directories recursively when creating directories
 4. THE domain services SHALL depend only on the FileSystem_Port interface, with no direct imports of Node.js `fs` modules
@@ -115,7 +115,7 @@ This spec covers the full implementation of four local-filesystem CLI commands â
 
 1. THE domain layer SHALL define a `jobNameSchema` using Zod that validates the Job_Name pattern `^[a-z0-9][a-z0-9_-]*$` with a maximum length of 128 characters
 2. THE domain layer SHALL define a `jobSchema` using Zod with fields: `name` (Job_Name), `status` (Job_Status enum), and `isActive` (boolean)
-3. THE domain layer SHALL define a `manifestEntrySchema` using Zod with fields: `filename` (non-empty string), `recipeName` (string), `sourceCollection` (string), `imageType` (string), and `notes` (string)
+3. THE domain layer SHALL define a `manifestEntrySchema` using Zod with fields: `file` (non-empty string), `modified` (ISO 8601 date-time string), `recipeNumber` (string, default empty), and `source` (string, default empty)
 4. THE domain layer SHALL export TypeScript types inferred from the Zod schemas
 
 ### Requirement 9: Error Handling

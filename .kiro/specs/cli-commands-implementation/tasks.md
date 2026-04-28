@@ -6,74 +6,76 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
 
 ## Tasks
 
-- [ ] 1. Create domain models and Zod schemas
-  - [ ] 1.1 Create `src/domain/models/job.ts` with all Zod schemas and types
+- [x] 1. Create domain models and Zod schemas
+  - [x] 1.1 Create `src/domain/models/job.ts` with all Zod schemas and types
     - Define `jobNameSchema` with regex `^[a-z0-9][a-z0-9_-]*$`, min 1, max 128
     - Define `jobStatusSchema` as enum `['empty', 'initialized', 'ingested']`
     - Define `jobSchema` with `name`, `status`, `isActive` fields
-    - Define `manifestEntrySchema` with `filename`, `recipeName`, `sourceCollection`, `imageType`, `notes` fields (defaults to empty string)
+    - Define `manifestEntrySchema` with `file`, `modified`, `recipeNumber`, `source` fields (`recipeNumber` and `source` default to empty string)
     - Define `SUPPORTED_IMAGE_EXTENSIONS` set
     - Export all schemas, inferred types, and constants
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 1.1_
 
-  - [ ] 1.2 Update `src/domain/models/index.ts` barrel file
+  - [x] 1.2 Update `src/domain/models/index.ts` barrel file
     - Re-export everything from `./job.js`
     - _Requirements: 8.4_
 
-  - [ ] 1.3 Write property test for job name validation (`src/domain/models/job.pbt.ts`)
+  - [x] 1.3 Write property test for job name validation (`src/domain/models/job.pbt.ts`)
     - **Property 1: Job name validation is consistent with the pattern**
     - Use `fast-check` to generate arbitrary strings and verify `jobNameSchema` accepts iff the string matches `^[a-z0-9][a-z0-9_-]*$` and length is 1–128
     - **Validates: Requirements 1.1, 1.2, 1.3, 1.4**
 
-  - [ ] 1.4 Write unit tests for domain models (`src/domain/models/job.unit.ts`)
+  - [x] 1.4 Write unit tests for domain models (`src/domain/models/job.unit.ts`)
     - Test `jobNameSchema` accepts valid names and rejects invalid ones (empty, too long, uppercase, special chars, leading hyphen)
-    - Test `manifestEntrySchema` defaults and validation
+    - Test `manifestEntrySchema` defaults and validation (fields: `file`, `modified`, `recipeNumber`, `source`)
     - Test `SUPPORTED_IMAGE_EXTENSIONS` contains all expected extensions
     - _Requirements: 8.1, 8.2, 8.3, 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 2. Create FileSystemPort interface and NodeFileSystemAdapter
-  - [ ] 2.1 Create `src/domain/ports/file-system-port.ts` with the `FileSystemPort` interface
+- [x] 2. Create FileSystemPort interface and NodeFileSystemAdapter
+  - [x] 2.1 Create `src/domain/ports/file-system-port.ts` with the `FileSystemPort` interface
     - Define `createDirectory(path: string): Promise<void>`
     - Define `exists(path: string): Promise<boolean>`
+    - Define `getFileModifiedTime(path: string): Promise<Date>`
     - Define `listDirectory(path: string): Promise<string[]>`
     - Define `readFile(path: string): Promise<string>`
     - Define `writeFile(path: string, content: string): Promise<void>`
     - _Requirements: 7.1, 7.4_
 
-  - [ ] 2.2 Update `src/domain/ports/index.ts` barrel file
+  - [x] 2.2 Update `src/domain/ports/index.ts` barrel file
     - Re-export everything from `./file-system-port.js`
     - _Requirements: 7.1_
 
-  - [ ] 2.3 Create `src/adapters/outbound/node-file-system-adapter.ts` implementing `FileSystemPort`
+  - [x] 2.3 Create `src/adapters/outbound/node-file-system-adapter.ts` implementing `FileSystemPort`
     - Implement `createDirectory` using `fs.mkdir` with `{ recursive: true }`
     - Implement `exists` using `fs.access` with catch returning `false`
+    - Implement `getFileModifiedTime` using `fs.stat` returning `stat.mtime`
     - Implement `listDirectory` using `fs.readdir`
     - Implement `readFile` using `fs.readFile` with `'utf-8'` encoding
     - Implement `writeFile` using `fs.writeFile`
     - _Requirements: 7.2, 7.3_
 
-  - [ ] 2.4 Update `src/adapters/outbound/index.ts` barrel file
+  - [x] 2.4 Update `src/adapters/outbound/index.ts` barrel file
     - Re-export `NodeFileSystemAdapter` from `./node-file-system-adapter.js`
     - _Requirements: 7.2_
 
 - [ ] 3. Implement CSV utilities
   - [ ] 3.1 Create `src/domain/services/csv-utils.ts`
-    - Define `MANIFEST_COLUMNS` constant array: `['filename', 'recipe_name', 'source_collection', 'image_type', 'notes']`
-    - Implement `serializeManifest(entries: ManifestEntry[]): string` — RFC 4180 CSV with header row, LF line endings, proper quoting for commas/quotes/newlines
-    - Implement `parseManifest(csv: string): ManifestEntry[]` — parse CSV back to `ManifestEntry[]`, handle quoted fields
+    - Define `MANIFEST_COLUMNS` constant array: `['file', 'modified', 'recipe_number', 'source']`
+    - Implement `serializeManifest(entries: ManifestEntry[]): string` — RFC 4180 CSV with header row, LF line endings, proper quoting for commas/quotes/newlines. Map camelCase fields (`recipeNumber`) to snake_case CSV columns (`recipe_number`).
+    - Implement `parseManifest(csv: string): ManifestEntry[]` — parse CSV back to `ManifestEntry[]`, handle quoted fields, map snake_case columns back to camelCase fields
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
   - [ ] 3.2 Write property test for CSV round-trip (`src/domain/services/csv-utils.pbt.ts`)
     - **Property 9: CSV serialization round-trip**
-    - Generate arbitrary arrays of `ManifestEntry` objects (including special characters: commas, quotes, newlines)
+    - Generate arbitrary arrays of `ManifestEntry` objects (including special characters: commas, quotes, newlines in `source` field, valid ISO timestamps for `modified`)
     - Verify `parseManifest(serializeManifest(entries))` deeply equals the original input
     - **Validates: Requirements 6.1, 6.2, 6.3, 6.4**
 
   - [ ] 3.3 Write unit tests for CSV utilities (`src/domain/services/csv-utils.unit.ts`)
-    - Test header row is present and correct
+    - Test header row is `file,modified,recipe_number,source`
     - Test quoting of fields with commas, double quotes, and newlines
     - Test empty entries array produces header-only output
-    - Test round-trip with typical manifest data
+    - Test round-trip with typical manifest data (filenames, ISO timestamps, recipe numbers, source names)
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
 - [ ] 4. Checkpoint — Verify foundation layers
@@ -109,7 +111,7 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
 - [ ] 6. Implement IngestService
   - [ ] 6.1 Create `src/domain/services/ingest-service.ts` with the `IngestService` class
     - Constructor takes `FileSystemPort`
-    - Implement `ingest(jobDir: string): Promise<{ discovered: number; total: number }>` — scan `<jobDir>/images/` for supported extensions, read existing `manifest.csv` if present, merge new entries preserving existing annotations, sort alphabetically by filename, write result, return counts
+    - Implement `ingest(jobDir: string): Promise<{ discovered: number; total: number }>` — scan `<jobDir>/images/` for supported extensions, read file modified timestamps via `FileSystemPort.getFileModifiedTime`, read existing `manifest.csv` if present, merge new entries preserving existing annotations (`recipeNumber`, `source`) while updating `modified` timestamps, sort by modified date ascending, write result, return counts
     - Use `SUPPORTED_IMAGE_EXTENSIONS` from domain models to filter files
     - Use `parseManifest` / `serializeManifest` from csv-utils for manifest I/O
     - Throw `HeirloomError` if no image files found
@@ -118,14 +120,14 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
   - [ ] 6.2 Write property tests for IngestService (`src/domain/services/ingest-service.pbt.ts`)
     - **Property 7: Ingest produces a correct manifest from image files**
     - **Property 8: Manifest merge preserves annotations and avoids duplicates**
-    - Use mock `FileSystemPort` with configurable directory listings and file contents
+    - Use mock `FileSystemPort` with configurable directory listings, file contents, and file modified times
     - **Validates: Requirements 5.1, 5.2, 5.3, 5.7, 5.8**
 
   - [ ] 6.3 Write unit tests for IngestService (`src/domain/services/ingest-service.unit.ts`)
     - Test fresh ingest with mixed image and non-image files
-    - Test merge with existing manifest preserving annotations
+    - Test merge with existing manifest preserving annotations (`recipeNumber`, `source`)
     - Test no-images error case
-    - Test alphabetical sorting of manifest entries
+    - Test sorting by modified date ascending
     - _Requirements: 5.1, 5.2, 5.3, 5.5, 5.7, 5.8_
 
   - [ ] 6.4 Update `src/domain/services/index.ts` barrel file

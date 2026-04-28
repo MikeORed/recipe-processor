@@ -1,1 +1,1 @@
-// Barrel file — exports will be added by feature specs
+export { NodeFileSystemAdapter } from './node-file-system-adapter.js';
