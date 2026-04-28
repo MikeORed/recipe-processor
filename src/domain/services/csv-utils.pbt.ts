@@ -13,6 +13,7 @@ const isoTimestampArb = fc
     min: new Date('2000-01-01T00:00:00.000Z'),
     max: new Date('2030-12-31T23:59:59.999Z'),
   })
+  .filter((d) => !isNaN(d.getTime()))
   .map((d) => d.toISOString());
 
 /**

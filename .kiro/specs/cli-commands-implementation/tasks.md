@@ -137,8 +137,8 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
 - [x] 7. Checkpoint — Verify domain layer
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Implement inbound handlers
-  - [ ] 8.1 Rewrite `src/adapters/inbound/init-handler.ts`
+- [x] 8. Implement inbound handlers
+  - [x] 8.1 Rewrite `src/adapters/inbound/init-handler.ts`
     - Replace stub with real implementation
     - Parse job name from `args[0]`, error if missing
     - Construct `NodeFileSystemAdapter` and `JobService`
@@ -147,7 +147,7 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
     - Catch `HeirloomError`, print message to stderr, set `process.exitCode = 1`
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 9.1, 9.2_
 
-  - [ ] 8.2 Rewrite `src/adapters/inbound/jobs-handler.ts`
+  - [x] 8.2 Rewrite `src/adapters/inbound/jobs-handler.ts`
     - Replace stub with real implementation
     - Construct `NodeFileSystemAdapter` and `JobService`
     - Call `jobService.listJobs()`
@@ -156,7 +156,7 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
     - Print message if no jobs found
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 9.1_
 
-  - [ ] 8.3 Rewrite `src/adapters/inbound/use-handler.ts`
+  - [x] 8.3 Rewrite `src/adapters/inbound/use-handler.ts`
     - Replace stub with real implementation
     - Parse job name from `args[0]`, error if missing
     - Construct `NodeFileSystemAdapter` and `JobService`
@@ -165,7 +165,7 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
     - Catch `HeirloomError`, print message to stderr, set `process.exitCode = 1`
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 9.1, 9.2_
 
-  - [ ] 8.4 Rewrite `src/adapters/inbound/ingest-handler.ts`
+  - [x] 8.4 Rewrite `src/adapters/inbound/ingest-handler.ts`
     - Replace stub with real implementation
     - Construct `NodeFileSystemAdapter`, `JobService`, and `IngestService`
     - Call `jobService.getActiveJob()`, error if no active job with suggestion to run `heirloom use <job-name>`
@@ -174,31 +174,31 @@ Replace the four stub CLI command handlers (`init`, `jobs`, `use`, `ingest`) wit
     - Catch `HeirloomError`, print message to stderr, set `process.exitCode = 1`
     - _Requirements: 5.1, 5.2, 5.4, 5.5, 5.6, 9.1, 9.2_
 
-  - [ ] 8.5 Write unit tests for init-handler (`src/adapters/inbound/init-handler.unit.ts`)
+  - [x] 8.5 Write unit tests for init-handler (`src/adapters/inbound/init-handler.unit.ts`)
     - Test success output message
     - Test missing job name argument error
     - Test duplicate job error output
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 9.1_
 
-  - [ ] 8.6 Write unit tests for jobs-handler (`src/adapters/inbound/jobs-handler.unit.ts`)
+  - [x] 8.6 Write unit tests for jobs-handler (`src/adapters/inbound/jobs-handler.unit.ts`)
     - Test listing output with multiple jobs and statuses
     - Test empty state message
     - Test active job indicator in output
     - _Requirements: 3.1, 3.2, 3.3, 3.5_
 
-  - [ ] 8.7 Write unit tests for use-handler (`src/adapters/inbound/use-handler.unit.ts`)
+  - [x] 8.7 Write unit tests for use-handler (`src/adapters/inbound/use-handler.unit.ts`)
     - Test success output message
     - Test missing job name argument error
     - Test non-existent job error output
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 9.1_
 
-  - [ ] 8.8 Write unit tests for ingest-handler (`src/adapters/inbound/ingest-handler.unit.ts`)
+  - [x] 8.8 Write unit tests for ingest-handler (`src/adapters/inbound/ingest-handler.unit.ts`)
     - Test success output with counts
     - Test no active job error with suggestion message
     - Test no images found error output
     - _Requirements: 5.1, 5.4, 5.5, 9.1_
 
-- [ ] 9. Final checkpoint — Ensure all tests pass
+- [x] 9. Final checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

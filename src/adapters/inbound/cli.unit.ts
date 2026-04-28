@@ -1,6 +1,30 @@
 import { runCli, printHelp } from './cli.js';
 
 const KNOWN_COMMANDS = ['init', 'ingest', 'transcribe', 'export', 'jobs', 'use'] as const;
+const STUB_COMMANDS = ['transcribe', 'export'] as const;
+
+// Mock the real handler modules so CLI routing tests stay isolated from
+// filesystem-dependent implementations. Stubs are left unmocked.
+jest.mock('./init-handler.js', () => ({
+  initHandler: jest.fn(async () => {
+    console.log('init handler called');
+  }),
+}));
+jest.mock('./ingest-handler.js', () => ({
+  ingestHandler: jest.fn(async () => {
+    console.log('ingest handler called');
+  }),
+}));
+jest.mock('./jobs-handler.js', () => ({
+  jobsHandler: jest.fn(async () => {
+    console.log('jobs handler called');
+  }),
+}));
+jest.mock('./use-handler.js', () => ({
+  useHandler: jest.fn(async () => {
+    console.log('use handler called');
+  }),
+}));
 
 describe('CLI command routing', () => {
   let stdoutSpy: jest.SpyInstance;
@@ -63,14 +87,23 @@ describe('CLI command routing', () => {
 
   describe('recognized commands route to their handlers', () => {
     it.each(KNOWN_COMMANDS)(
-      '"%s" routes to its handler and prints stub message',
+      '"%s" routes to its handler without error',
+      async (command) => {
+        await runCli([command]);
+
+        expect(stdoutSpy).toHaveBeenCalled();
+        expect(process.exitCode).toBeUndefined();
+      },
+    );
+
+    it.each(STUB_COMMANDS)(
+      '"%s" prints stub message',
       async (command) => {
         await runCli([command]);
 
         expect(stdoutSpy).toHaveBeenCalledWith(
           `${command} is not implemented yet`,
         );
-        expect(process.exitCode).toBeUndefined();
       },
     );
   });
@@ -88,12 +121,11 @@ describe('CLI command routing', () => {
 
   describe('handler error propagation', () => {
     it('catches handler errors, prints message to stderr, and sets exitCode to 1', async () => {
-      // Make console.log throw to simulate a handler failure.
-      // The stub handlers call console.log, so this triggers the catch path in runCli.
-      stdoutSpy.mockRestore();
-      stdoutSpy = jest.spyOn(console, 'log').mockImplementation(() => {
-        throw new Error('handler failure');
-      });
+      // Import the mocked handler and make it throw
+      const { initHandler } = await import('./init-handler.js');
+      (initHandler as jest.Mock).mockRejectedValueOnce(
+        new Error('handler failure'),
+      );
 
       await runCli(['init']);
 
