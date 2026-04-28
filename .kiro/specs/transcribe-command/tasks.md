@@ -247,12 +247,12 @@ Implement the transcribe command (step 3 of the Heirloom pipeline) following the
     - Assert IAM policies grant scoped access to S3, DynamoDB, Textract, Bedrock
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
 
-- [ ] 9. Update configuration
+- [x] 9. Update configuration
   - Add Bedrock model ID config key to `src/config/config.ts` via convict (env: `HEIRLOOM_BEDROCK_MODEL_ID`, default to a sensible Claude model ARN)
   - Verify existing S3 and DynamoDB config keys are sufficient for all adapters
   - _Requirements: 9.5_
 
-- [ ] 10. Final checkpoint — Ensure all tests pass
+- [x] 10. Final checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

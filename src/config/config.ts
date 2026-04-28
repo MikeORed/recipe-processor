@@ -21,7 +21,7 @@ const config = convict({
     modelId: {
       doc: 'Bedrock model ID for structure extraction',
       format: String,
-      default: 'anthropic.claude-3-haiku-20240307-v1:0',
+      default: 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
       env: 'HEIRLOOM_BEDROCK_MODEL_ID',
     },
   },
