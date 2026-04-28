@@ -1,10 +1,9 @@
 import { runCli, printHelp } from './cli.js';
 
 const KNOWN_COMMANDS = ['init', 'ingest', 'transcribe', 'export', 'jobs', 'use'] as const;
-const STUB_COMMANDS = ['export'] as const;
 
 // Mock the real handler modules so CLI routing tests stay isolated from
-// filesystem-dependent implementations. Stubs are left unmocked.
+// filesystem-dependent implementations.
 jest.mock('./init-handler.js', () => ({
   initHandler: jest.fn(async () => {
     console.log('init handler called');
@@ -28,6 +27,11 @@ jest.mock('./use-handler.js', () => ({
 jest.mock('./transcribe-handler.js', () => ({
   transcribeHandler: jest.fn(async () => {
     console.log('transcribe handler called');
+  }),
+}));
+jest.mock('./export-handler.js', () => ({
+  exportHandler: jest.fn(async () => {
+    console.log('export handler called');
   }),
 }));
 
@@ -101,16 +105,7 @@ describe('CLI command routing', () => {
       },
     );
 
-    it.each(STUB_COMMANDS)(
-      '"%s" prints stub message',
-      async (command) => {
-        await runCli([command]);
 
-        expect(stdoutSpy).toHaveBeenCalledWith(
-          `${command} is not implemented yet`,
-        );
-      },
-    );
   });
 
   describe('printHelp', () => {

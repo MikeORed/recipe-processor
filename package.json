@@ -26,16 +26,19 @@
     "aws-cdk-lib": "^2.200.0",
     "constructs": "^10.4.2",
     "convict": "^6.2.4",
+    "pdfkit": "^0.18.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {
     "@types/convict": "^6.1.6",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.21",
+    "@types/pdfkit": "^0.17.6",
     "fast-check": "^4.1.1",
     "jest": "^30.0.4",
     "ts-jest": "^29.4.0",
     "tsx": "^4.19.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "yaml": "^2.8.3"
   }
 }

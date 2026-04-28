@@ -6,27 +6,27 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
 
 ## Tasks
 
-- [ ] 1. Install dependencies and define domain ports
-  - [ ] 1.1 Install `pdfkit` as a production dependency and `@types/pdfkit` + `yaml` as dev dependencies
+- [x] 1. Install dependencies and define domain ports
+  - [x] 1.1 Install `pdfkit` as a production dependency and `@types/pdfkit` + `yaml` as dev dependencies
     - Run `npm install pdfkit` and `npm install --save-dev @types/pdfkit yaml`
     - _Requirements: 3.1, 5.1_
 
-  - [ ] 1.2 Create `PdfRendererPort` interface
+  - [x] 1.2 Create `PdfRendererPort` interface
     - Create `src/domain/ports/pdf-renderer-port.ts`
     - Define `PdfRendererPort` with method `render(recipes: Recipe[], outputPath: string): Promise<void>`
     - _Requirements: 5.1, 5.2_
 
-  - [ ] 1.3 Create `MarkdownRendererPort` interface
+  - [x] 1.3 Create `MarkdownRendererPort` interface
     - Create `src/domain/ports/markdown-renderer-port.ts`
     - Define `MarkdownRendererPort` with method `renderVault(recipes: Recipe[], outputDir: string): Promise<void>`
     - _Requirements: 5.1, 5.2_
 
-  - [ ] 1.4 Update `src/domain/ports/index.ts` barrel export
+  - [x] 1.4 Update `src/domain/ports/index.ts` barrel export
     - Add exports for `PdfRendererPort` and `MarkdownRendererPort`
     - _Requirements: 5.1_
 
-- [ ] 2. Implement pure Markdown utility functions
-  - [ ] 2.1 Create `src/domain/services/markdown-utils.ts` with `slugify` function
+- [x] 2. Implement pure Markdown utility functions
+  - [x] 2.1 Create `src/domain/services/markdown-utils.ts` with `slugify` function
     - Implement `slugify(title: string): string` — lowercase, replace non-alphanumeric with hyphens, collapse consecutive hyphens, truncate to 100 chars, ensure non-empty output
     - Implement `buildVaultFilename(recipeNumber: string, title: string): string` — returns `<recipeNumber>-<slugified-title>.md`
     - _Requirements: 9.1, 9.2, 9.3_
@@ -37,7 +37,7 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
     - For any non-empty string, verify output contains only `[a-z0-9-]`, no consecutive hyphens, length ≤ 100, and is non-empty
     - **Validates: Requirements 9.1, 9.2, 9.3**
 
-  - [ ] 2.3 Implement `renderRecipeMarkdown` function
+  - [x] 2.3 Implement `renderRecipeMarkdown` function
     - Accepts a `Recipe` and returns a complete Markdown string
     - Generate YAML frontmatter with recipeNumber, jobName, imageKeys, and conditional `needs-review` tag
     - Render title as level-1 heading, source wikilink if non-empty, ingredients list, instructions list, notes section
@@ -64,7 +64,7 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
     - Generate recipes with varying confidence scores, verify `needs-review` tag and inline comments for fields < 0.7
     - **Validates: Requirements 4.6**
 
-  - [ ] 2.8 Implement `renderIndexMarkdown` function
+  - [x] 2.8 Implement `renderIndexMarkdown` function
     - Accepts a list of Recipe objects and returns the index Markdown string
     - Include a wikilink to each recipe file using `buildVaultFilename`
     - _Requirements: 4.8, 8.2_
@@ -82,8 +82,8 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
     - Test `renderIndexMarkdown` with specific recipe lists
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 9.1, 9.2, 9.3_
 
-- [ ] 3. Implement ExportService domain service
-  - [ ] 3.1 Create `src/domain/services/export-service.ts`
+- [x] 3. Implement ExportService domain service
+  - [x] 3.1 Create `src/domain/services/export-service.ts`
     - Define `ExportFormat` type (`'pdf' | 'obsidian'`)
     - Define `ExportResult` interface (`recipeCount`, `outputPath`, `warnings`)
     - Implement `ExportService` class with constructor accepting `DataStore`, `PdfRendererPort`, `MarkdownRendererPort`
@@ -102,7 +102,7 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
     - Generate random recipe lists, verify ascending lexicographic order by recipeNumber after sort
     - **Validates: Requirements 2.3**
 
-  - [ ]* 3.3 Write unit tests for ExportService
+  - [x] 3.3 Write unit tests for ExportService
     - Create `src/domain/services/export-service.unit.ts`
     - Test: calls DataStore.getJobStatus before getRecipesByJob
     - Test: throws when job not found
@@ -114,16 +114,16 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
     - Test: reports errors from renderer without cleanup
     - _Requirements: 2.1, 2.2, 2.3, 6.3, 7.1, 7.2, 7.3_
 
-  - [ ] 3.4 Update `src/domain/services/index.ts` barrel export
+  - [x] 3.4 Update `src/domain/services/index.ts` barrel export
     - Add exports for `ExportService`, `ExportFormat`, `ExportResult`
     - Add exports for markdown-utils functions (`renderRecipeMarkdown`, `renderIndexMarkdown`, `slugify`, `buildVaultFilename`)
     - _Requirements: 5.1_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Implement outbound adapters
-  - [ ] 5.1 Create `PdfKitAdapter` at `src/adapters/outbound/pdfkit-adapter.ts`
+- [x] 5. Implement outbound adapters
+  - [x] 5.1 Create `PdfKitAdapter` at `src/adapters/outbound/pdfkit-adapter.ts`
     - Implement `PdfRendererPort` interface
     - Accept `FileSystemPort` in constructor for directory creation
     - Generate PDF using `pdfkit`:
@@ -134,7 +134,7 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
     - Write PDF stream to output path
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-  - [ ]* 5.2 Write unit tests for `PdfKitAdapter`
+  - [x] 5.2 Write unit tests for `PdfKitAdapter`
     - Create `src/adapters/outbound/pdfkit-adapter.unit.ts`
     - Mock `FileSystemPort`; verify directory creation
     - Verify PDF generation completes without error for valid recipes
@@ -142,7 +142,7 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
     - Verify review markers appear for low-confidence fields
     - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-  - [ ] 5.3 Create `ObsidianVaultAdapter` at `src/adapters/outbound/obsidian-vault-adapter.ts`
+  - [x] 5.3 Create `ObsidianVaultAdapter` at `src/adapters/outbound/obsidian-vault-adapter.ts`
     - Implement `MarkdownRendererPort` interface
     - Accept `FileSystemPort` in constructor
     - Use `renderRecipeMarkdown` and `renderIndexMarkdown` from markdown-utils
@@ -151,7 +151,7 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
     - Overwrite existing files on re-export (idempotent)
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 6.1_
 
-  - [ ]* 5.4 Write unit tests for `ObsidianVaultAdapter`
+  - [x] 5.4 Write unit tests for `ObsidianVaultAdapter`
     - Create `src/adapters/outbound/obsidian-vault-adapter.unit.ts`
     - Mock `FileSystemPort`; verify correct directory creation
     - Verify one file per recipe with correct filename pattern
@@ -159,12 +159,12 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
     - Verify overwrites on re-export
     - _Requirements: 4.1, 4.2, 4.8, 6.1_
 
-  - [ ] 5.5 Update `src/adapters/outbound/index.ts` barrel export
+  - [x] 5.5 Update `src/adapters/outbound/index.ts` barrel export
     - Add exports for `PdfKitAdapter` and `ObsidianVaultAdapter`
     - _Requirements: 5.1_
 
-- [ ] 6. Implement ExportHandler inbound adapter
-  - [ ] 6.1 Replace stub in `src/adapters/inbound/export-handler.ts`
+- [x] 6. Implement ExportHandler inbound adapter
+  - [x] 6.1 Replace stub in `src/adapters/inbound/export-handler.ts`
     - Parse CLI arguments: extract format (`pdf` | `obsidian`) and optional `--job <name>` flag
     - Print usage message when no format argument provided
     - Print error and set `process.exitCode = 1` for unrecognized format
@@ -177,7 +177,7 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
     - Catch `HeirloomError` and print to stderr with non-zero exit code
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.8, 4.9, 6.2_
 
-  - [ ]* 6.2 Write unit tests for `ExportHandler`
+  - [x] 6.2 Write unit tests for `ExportHandler`
     - Replace existing stub test in `src/adapters/inbound/export-handler.unit.ts`
     - Test: parses `pdf` and `obsidian` format arguments correctly
     - Test: prints usage when no format given
@@ -187,7 +187,7 @@ Replace the stub `export` handler with two concrete export formats (PDF cookbook
     - Test: handles errors gracefully (HeirloomError → stderr + exit code)
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 6.2_
 
-- [ ] 7. Final checkpoint - Ensure all tests pass
+- [x] 7. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
