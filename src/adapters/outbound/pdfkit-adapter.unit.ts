@@ -14,9 +14,12 @@ function makeRecipe(overrides: Partial<Recipe> = {}): Recipe {
     recipeNumber: '001',
     source: 'Grandma',
     title: 'Chocolate Cake',
+    author: 'Grandma',
+    year: null,
+    tags: ['dessert', 'cake'],
     ingredients: ['flour', 'sugar', 'cocoa'],
     instructions: ['Mix dry ingredients', 'Add wet ingredients', 'Bake at 350°F'],
-    notes: 'Best served warm',
+    notes: ['Best served warm'],
     imageKeys: ['test-job/img001.jpg'],
     confidence: { title: 0.95, ingredients: 0.9, instructions: 0.85, notes: 0.8 },
     ...overrides,
@@ -172,11 +175,11 @@ describe('PdfKitAdapter', () => {
     });
 
     it('includes notes when present', async () => {
-      const recipes = [makeRecipe({ notes: 'Refrigerate overnight' })];
+      const recipes = [makeRecipe({ notes: ['Refrigerate overnight'] })];
 
       await adapter.render(recipes, '/tmp/test.pdf');
 
-      expect(capturedTexts).toContain('Refrigerate overnight');
+      expect(capturedTexts).toContain('  • Refrigerate overnight');
     });
 
     it('includes image key references', async () => {
@@ -199,7 +202,7 @@ describe('PdfKitAdapter', () => {
     });
 
     it('does not include notes section when notes is empty', async () => {
-      const recipes = [makeRecipe({ notes: '' })];
+      const recipes = [makeRecipe({ notes: [] })];
 
       await adapter.render(recipes, '/tmp/test.pdf');
 

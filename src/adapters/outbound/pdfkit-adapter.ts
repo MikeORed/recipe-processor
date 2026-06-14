@@ -85,9 +85,12 @@ export class PdfKitAdapter implements PdfRendererPort {
     doc.moveDown(0.5);
 
     // Notes
-    if (recipe.notes) {
+    if (recipe.notes.length > 0) {
       doc.fontSize(14).text(`Notes${hasLowConfidence('notes') ? ' ⚠️' : ''}`);
-      doc.fontSize(10).text(recipe.notes);
+      doc.fontSize(10);
+      for (const note of recipe.notes) {
+        doc.text(`  • ${note}`);
+      }
       doc.moveDown(0.5);
     }
 

@@ -123,7 +123,7 @@ describe('IngestService (property-based)', () => {
 
   // Feature: cli-commands-implementation, Property 7: Ingest produces a correct manifest from image files
   describe('Property 7: Ingest produces a correct manifest from image files', () => {
-    it('produces a manifest containing exactly the supported image files, sorted by modified date ascending, with empty annotations', async () => {
+    it('produces a manifest containing exactly the supported image files, sorted by filename ascending, with empty annotations', async () => {
       await fc.assert(
         fc.asyncProperty(
           mixedFilenamesArb,
@@ -172,9 +172,9 @@ describe('IngestService (property-based)', () => {
               expect(entry.source).toBe('');
             }
 
-            // Entries should be sorted by modified date ascending
+            // Entries should be sorted by filename ascending
             for (let i = 1; i < manifest.length; i++) {
-              expect(manifest[i].modified >= manifest[i - 1].modified).toBe(true);
+              expect(manifest[i].file.localeCompare(manifest[i - 1].file) >= 0).toBe(true);
             }
           },
         ),
@@ -295,9 +295,9 @@ describe('IngestService (property-based)', () => {
               expect(entry.modified).toBe(expectedDate.toISOString());
             }
 
-            // Entries should be sorted by modified date ascending
+            // Entries should be sorted by filename ascending
             for (let i = 1; i < manifest.length; i++) {
-              expect(manifest[i].modified >= manifest[i - 1].modified).toBe(true);
+              expect(manifest[i].file.localeCompare(manifest[i - 1].file) >= 0).toBe(true);
             }
           },
         ),

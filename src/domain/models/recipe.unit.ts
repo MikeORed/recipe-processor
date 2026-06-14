@@ -5,9 +5,12 @@ const validRecipe = {
   recipeNumber: '1',
   source: "Mom's Card Box",
   title: 'Chocolate Chip Cookies',
+  author: 'Grandma',
+  year: 1985,
+  tags: ['dessert', 'cookie'],
   ingredients: ['2 cups flour', '1 cup sugar'],
   instructions: ['Mix dry ingredients', 'Bake at 350F'],
-  notes: 'Family favorite',
+  notes: ['Family favorite', 'Double batch for holidays'],
   imageKeys: ['my-job/IMG_0001.jpg'],
   confidence: {
     title: 0.95,
@@ -24,15 +27,46 @@ describe('recipeSchema', () => {
     expect(result.data).toEqual(validRecipe);
   });
 
-  it('applies default empty string for notes when omitted', () => {
+  it('applies default empty array for notes when omitted', () => {
     const { notes: _notes, ...withoutNotes } = validRecipe;
     const result = recipeSchema.safeParse(withoutNotes);
     expect(result.success).toBe(true);
-    expect(result.data!.notes).toBe('');
+    expect(result.data!.notes).toEqual([]);
   });
 
-  it('accepts notes as empty string', () => {
-    const result = recipeSchema.safeParse({ ...validRecipe, notes: '' });
+  it('accepts notes as empty array', () => {
+    const result = recipeSchema.safeParse({ ...validRecipe, notes: [] });
+    expect(result.success).toBe(true);
+  });
+
+  it('defaults author to null when omitted', () => {
+    const { author: _author, ...withoutAuthor } = validRecipe;
+    const result = recipeSchema.safeParse(withoutAuthor);
+    expect(result.success).toBe(true);
+    expect(result.data!.author).toBeNull();
+  });
+
+  it('defaults year to null when omitted', () => {
+    const { year: _year, ...withoutYear } = validRecipe;
+    const result = recipeSchema.safeParse(withoutYear);
+    expect(result.success).toBe(true);
+    expect(result.data!.year).toBeNull();
+  });
+
+  it('defaults tags to empty array when omitted', () => {
+    const { tags: _tags, ...withoutTags } = validRecipe;
+    const result = recipeSchema.safeParse(withoutTags);
+    expect(result.success).toBe(true);
+    expect(result.data!.tags).toEqual([]);
+  });
+
+  it('accepts author as null', () => {
+    const result = recipeSchema.safeParse({ ...validRecipe, author: null });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts year as null', () => {
+    const result = recipeSchema.safeParse({ ...validRecipe, year: null });
     expect(result.success).toBe(true);
   });
 
@@ -76,12 +110,6 @@ describe('recipeSchema', () => {
   });
 
   describe('rejects empty arrays for ingredients and instructions', () => {
-    it('rejects empty ingredients array', () => {
-      expect(
-        recipeSchema.safeParse({ ...validRecipe, ingredients: [] }).success,
-      ).toBe(true); // empty array is structurally valid per schema (no minLength on array)
-    });
-
     it('rejects ingredients with empty strings', () => {
       expect(
         recipeSchema.safeParse({ ...validRecipe, ingredients: [''] }).success,
@@ -140,6 +168,12 @@ describe('recipeSchema', () => {
   it('rejects imageKeys with empty strings', () => {
     expect(
       recipeSchema.safeParse({ ...validRecipe, imageKeys: [''] }).success,
+    ).toBe(false);
+  });
+
+  it('rejects tags with empty strings', () => {
+    expect(
+      recipeSchema.safeParse({ ...validRecipe, tags: [''] }).success,
     ).toBe(false);
   });
 });

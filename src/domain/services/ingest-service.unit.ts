@@ -179,8 +179,8 @@ describe('IngestService', () => {
     });
   });
 
-  describe('sorting by modified date ascending', () => {
-    it('writes manifest entries sorted by modified date ascending', async () => {
+  describe('sorting by filename ascending', () => {
+    it('writes manifest entries sorted by filename ascending', async () => {
       const mockFs = createMockFs({
         listDirectoryMap: {
           'jobs/batch1/images': ['c.jpg', 'a.png', 'b.jpeg'],
@@ -202,13 +202,10 @@ describe('IngestService', () => {
       const entries = parseManifest(csv);
       expect(entries).toHaveLength(3);
 
-      // Verify ascending order by modified date
+      // Verify ascending order by filename
       expect(entries[0].file).toBe('a.png');
-      expect(entries[0].modified).toBe('2025-01-01T00:00:00.000Z');
       expect(entries[1].file).toBe('b.jpeg');
-      expect(entries[1].modified).toBe('2025-02-01T00:00:00.000Z');
       expect(entries[2].file).toBe('c.jpg');
-      expect(entries[2].modified).toBe('2025-03-01T00:00:00.000Z');
     });
   });
 });

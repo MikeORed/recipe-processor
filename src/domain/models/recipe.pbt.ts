@@ -29,9 +29,12 @@ const validRecipeArb = fc.record({
   recipeNumber: nonEmptyStringArb,
   source: fc.string(),
   title: nonEmptyStringArb,
+  author: fc.oneof(nonEmptyStringArb, fc.constant(null)),
+  year: fc.oneof(fc.integer({ min: 1900, max: 2030 }), fc.constant(null)),
+  tags: fc.array(nonEmptyStringArb, { minLength: 0, maxLength: 5 }),
   ingredients: fc.array(nonEmptyStringArb, { minLength: 1, maxLength: 10 }),
   instructions: fc.array(nonEmptyStringArb, { minLength: 1, maxLength: 10 }),
-  notes: fc.string(),
+  notes: fc.array(fc.string(), { minLength: 0, maxLength: 5 }),
   imageKeys: fc.array(nonEmptyStringArb, { minLength: 1, maxLength: 5 }),
   confidence: validConfidenceObjArb,
 });

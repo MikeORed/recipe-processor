@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "jest",
+    "test": "node --max-old-space-size=4096 node_modules/jest/bin/jest.js --maxWorkers=2",
     "clean": "rm -rf dist",
     "init": "npx tsx bin/heirloom.ts init",
     "ingest": "npx tsx bin/heirloom.ts ingest",

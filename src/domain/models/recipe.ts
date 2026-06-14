@@ -11,9 +11,12 @@ export const recipeSchema = z.object({
   recipeNumber: z.string().min(1),
   source: z.string(),
   title: z.string().min(1),
+  author: z.string().nullable().default(null),
+  year: z.number().int().nullable().default(null),
+  tags: z.array(z.string().min(1)).default([]),
   ingredients: z.array(z.string().min(1)),
   instructions: z.array(z.string().min(1)),
-  notes: z.string().default(''),
+  notes: z.array(z.string()).default([]),
   imageKeys: z.array(z.string().min(1)),
   confidence: z.object({
     title: confidenceScoreSchema,

@@ -27,21 +27,44 @@ export function slugify(title: string): string {
 /**
  * Build the vault filename for a recipe.
  *
- * Returns `<recipeNumber>-<slugified-title>.md`.
+ * Uses the recipe title as the primary identifier. If duplicates exist
+ * in a set, callers should disambiguate before calling this function.
  */
 export function buildVaultFilename(recipeNumber: string, title: string): string {
-  return `${recipeNumber}-${slugify(title)}.md`;
+  return `${slugify(title)}.md`;
+}
+
+/**
+ * Deduplicate filenames by appending a numeric suffix when titles collide.
+ * Returns a Map from recipeNumber → filename.
+ */
+export function buildVaultFilenames(recipes: Recipe[]): Map<string, string> {
+  const counts = new Map<string, number>();
+  const result = new Map<string, string>();
+
+  for (const recipe of recipes) {
+    const baseSlug = slugify(recipe.title);
+    const count = counts.get(baseSlug) ?? 0;
+    counts.set(baseSlug, count + 1);
+
+    const filename = count === 0
+      ? `${baseSlug}.md`
+      : `${baseSlug}-${count + 1}.md`;
+    result.set(recipe.recipeNumber, filename);
+  }
+
+  return result;
 }
 
 /**
  * Render a single Recipe as a complete Markdown string with YAML frontmatter.
  *
- * Frontmatter includes recipeNumber, jobName, imageKeys, and a conditional
- * `needs-review` tag when any confidence score is below 0.7.
+ * Frontmatter includes recipeNumber, jobName, source, author, year, tags,
+ * imageKeys, and a conditional `needs-review` tag when any confidence score
+ * is below 0.7.
  *
- * Body includes the title as a level-1 heading, optional source wikilink,
- * ingredients list, instructions list, and notes section. Fields with
- * confidence < 0.7 receive an inline comment annotation.
+ * Body includes the title as a level-1 heading, metadata section,
+ * ingredients list, instructions list, and notes section.
  */
 export function renderRecipeMarkdown(recipe: Recipe): string {
   const hasLowConfidence =
@@ -54,15 +77,28 @@ export function renderRecipeMarkdown(recipe: Recipe): string {
   const frontmatterLines: string[] = ['---'];
   frontmatterLines.push(`recipeNumber: "${recipe.recipeNumber}"`);
   frontmatterLines.push(`jobName: "${recipe.jobName}"`);
+  frontmatterLines.push(`source: "${recipe.source}"`);
+
+  if (recipe.author) {
+    frontmatterLines.push(`author: "${recipe.author}"`);
+  }
+  if (recipe.year) {
+    frontmatterLines.push(`year: ${recipe.year}`);
+  }
+
+  if (recipe.tags.length > 0 || hasLowConfidence) {
+    frontmatterLines.push('tags:');
+    for (const tag of recipe.tags) {
+      frontmatterLines.push(`  - ${tag}`);
+    }
+    if (hasLowConfidence) {
+      frontmatterLines.push('  - needs-review');
+    }
+  }
 
   frontmatterLines.push('imageKeys:');
   for (const key of recipe.imageKeys) {
     frontmatterLines.push(`  - "${key}"`);
-  }
-
-  if (hasLowConfidence) {
-    frontmatterLines.push('tags:');
-    frontmatterLines.push('  - needs-review');
   }
 
   frontmatterLines.push('---');
@@ -79,9 +115,19 @@ export function renderRecipeMarkdown(recipe: Recipe): string {
 
   bodyLines.push('');
 
-  // Source wikilink
+  // Metadata line
+  const metaParts: string[] = [];
   if (recipe.source) {
-    bodyLines.push(`[[source:${recipe.source}]]`);
+    metaParts.push(`[[source:${recipe.source}]]`);
+  }
+  if (recipe.author) {
+    metaParts.push(`[[author:${recipe.author}]]`);
+  }
+  if (recipe.year) {
+    metaParts.push(`(${recipe.year})`);
+  }
+  if (metaParts.length > 0) {
+    bodyLines.push(metaParts.join(' · '));
     bodyLines.push('');
   }
 
@@ -108,21 +154,24 @@ export function renderRecipeMarkdown(recipe: Recipe): string {
   bodyLines.push('');
 
   // Notes
-  bodyLines.push('## Notes');
-  bodyLines.push('');
-  if (recipe.confidence.notes < 0.7) {
-    bodyLines.push('<!-- low-confidence: notes -->');
+  if (recipe.notes.length > 0) {
+    bodyLines.push('## Notes');
+    bodyLines.push('');
+    if (recipe.confidence.notes < 0.7) {
+      bodyLines.push('<!-- low-confidence: notes -->');
+    }
+    for (const note of recipe.notes) {
+      bodyLines.push(`- ${note}`);
+    }
+    bodyLines.push('');
   }
-  bodyLines.push(recipe.notes);
-  bodyLines.push('');
 
   return frontmatterLines.join('\n') + '\n\n' + bodyLines.join('\n');
 }
 
 /**
- * Render an index Markdown file listing all recipes with wikilinks.
- *
- * Each recipe gets a wikilink entry using `buildVaultFilename` for the target.
+ * Render an index Markdown file listing all recipes with wikilinks,
+ * grouped by tag category.
  */
 export function renderIndexMarkdown(recipes: Recipe[]): string {
   const lines: string[] = [];
@@ -130,11 +179,19 @@ export function renderIndexMarkdown(recipes: Recipe[]): string {
   lines.push('# Recipe Index');
   lines.push('');
 
-  for (const recipe of recipes) {
-    const filename = buildVaultFilename(recipe.recipeNumber, recipe.title);
-    // Remove .md extension for wikilink target
+  // Build filename map for deduplication
+  const filenames = buildVaultFilenames(recipes);
+
+  // Sort recipes by title for alphabetical listing
+  const sorted = [...recipes].sort((a, b) =>
+    a.title.localeCompare(b.title),
+  );
+
+  for (const recipe of sorted) {
+    const filename = filenames.get(recipe.recipeNumber) ?? buildVaultFilename(recipe.recipeNumber, recipe.title);
     const linkTarget = filename.replace(/\.md$/, '');
-    lines.push(`- [[${linkTarget}|${recipe.title}]]`);
+    const authorSuffix = recipe.author ? ` — ${recipe.author}` : '';
+    lines.push(`- [[${linkTarget}|${recipe.title}]]${authorSuffix}`);
   }
 
   lines.push('');

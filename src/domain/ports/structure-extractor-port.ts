@@ -9,5 +9,5 @@ export interface ExtractionInput {
 }
 
 export interface StructureExtractor {
-  extract(input: ExtractionInput): Promise<Recipe>;
+  extract(input: ExtractionInput): Promise<Recipe[]>;
 }

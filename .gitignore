@@ -5,6 +5,7 @@ node_modules/
 dist/
 build/
 out/
+cdk*/
 
 # Temp files
 .tmp/
@@ -13,6 +14,8 @@ tmp/
 
 # Jobs (local image landing zones)
 jobs/
+jobs-input/
+exports/
 
 # Environment variables
 .env

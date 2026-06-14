@@ -171,8 +171,8 @@ export class TranscribeService {
     // Determine source from the first entry (all entries in a group share the same recipeNumber)
     const source = entries[0].source ?? '';
 
-    // Extract structured recipe data
-    const recipe = await this.structureExtractor.extract({
+    // Extract structured recipe data (may return multiple recipes per group)
+    const recipes = await this.structureExtractor.extract({
       ocrText: combinedText,
       recipeNumber,
       source,
@@ -180,7 +180,9 @@ export class TranscribeService {
       imageKeys,
     });
 
-    // Persist the recipe
-    await this.dataStore.putRecipe(recipe);
+    // Persist all extracted recipes
+    for (const recipe of recipes) {
+      await this.dataStore.putRecipe(recipe);
+    }
   }
 }

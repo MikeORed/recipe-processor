@@ -22,7 +22,7 @@ const config: Config = {
     '**/test/**/*.test.ts',
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!(@nodable|@aws-sdk|@smithy)/)',
+    'node_modules/',
   ],
   testPathIgnorePatterns: [
     '/node_modules/',

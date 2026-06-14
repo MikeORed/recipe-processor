@@ -72,22 +72,25 @@ function createMockStructureExtractor(errorRecipeNumbers: Set<string> = new Set(
   const extractedInputs: ExtractionInput[] = [];
   return {
     extractedInputs,
-    async extract(input: ExtractionInput): Promise<Recipe> {
+    async extract(input: ExtractionInput): Promise<Recipe[]> {
       extractedInputs.push(input);
       if (errorRecipeNumbers.has(input.recipeNumber)) {
         throw new Error(`Extraction failed for recipe ${input.recipeNumber}`);
       }
-      return {
+      return [{
         jobName: input.jobName,
         recipeNumber: input.recipeNumber,
         source: input.source,
         title: `Recipe ${input.recipeNumber}`,
+        author: null,
+        year: null,
+        tags: [],
         ingredients: ['ingredient1'],
         instructions: ['step1'],
-        notes: '',
+        notes: [],
         imageKeys: input.imageKeys,
         confidence: { title: 0.9, ingredients: 0.85, instructions: 0.88, notes: 0.7 },
-      };
+      }];
     },
   };
 }

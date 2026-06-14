@@ -11,9 +11,12 @@ function makeRecipe(overrides: Partial<Recipe> = {}): Recipe {
     recipeNumber: '001',
     source: 'Grandma',
     title: 'Chocolate Cake',
+    author: 'Grandma',
+    year: null,
+    tags: ['dessert', 'cake'],
     ingredients: ['flour', 'sugar', 'cocoa'],
     instructions: ['Mix dry ingredients', 'Add wet ingredients', 'Bake at 350°F'],
-    notes: 'Best served warm',
+    notes: ['Best served warm'],
     imageKeys: ['test-job/img001.jpg'],
     confidence: { title: 0.95, ingredients: 0.9, instructions: 0.85, notes: 0.8 },
     ...overrides,
@@ -76,11 +79,11 @@ describe('ObsidianVaultAdapter', () => {
     // 3 recipe files + 1 index file = 4 total
     expect(writtenFiles.size).toBe(4);
 
-    // Verify filename pattern: <recipeNumber>-<slugified-title>.md
+    // Verify filename pattern: <slugified-title>.md
     const filenames = [...writtenFiles.keys()];
-    expect(filenames).toContainEqual(expect.stringContaining('001-chocolate-cake.md'));
-    expect(filenames).toContainEqual(expect.stringContaining('002-apple-pie.md'));
-    expect(filenames).toContainEqual(expect.stringContaining('003-banana-bread.md'));
+    expect(filenames).toContainEqual(expect.stringContaining('chocolate-cake.md'));
+    expect(filenames).toContainEqual(expect.stringContaining('apple-pie.md'));
+    expect(filenames).toContainEqual(expect.stringContaining('banana-bread.md'));
   });
 
   it('writes _index.md', async () => {
@@ -111,8 +114,8 @@ describe('ObsidianVaultAdapter', () => {
     const indexPath = [...writtenFiles.keys()].find((p) => p.endsWith('_index.md'));
     const indexContent = writtenFiles.get(indexPath!)!;
 
-    expect(indexContent).toContain('[[001-chocolate-cake|Chocolate Cake]]');
-    expect(indexContent).toContain('[[002-apple-pie|Apple Pie]]');
+    expect(indexContent).toContain('[[chocolate-cake|Chocolate Cake]]');
+    expect(indexContent).toContain('[[apple-pie|Apple Pie]]');
   });
 
   it('recipe files contain YAML frontmatter with recipeNumber', async () => {
@@ -124,7 +127,7 @@ describe('ObsidianVaultAdapter', () => {
       '/exports/test-job/vault',
     );
 
-    const recipePath = [...writtenFiles.keys()].find((p) => p.includes('042-test-recipe.md'));
+    const recipePath = [...writtenFiles.keys()].find((p) => p.includes('test-recipe.md'));
     const content = writtenFiles.get(recipePath!)!;
 
     expect(content).toContain('recipeNumber: "042"');
@@ -140,13 +143,13 @@ describe('ObsidianVaultAdapter', () => {
     // First export
     await adapter.renderVault(recipes, '/exports/test-job/vault');
     const firstContent = writtenFiles.get(
-      [...writtenFiles.keys()].find((p) => p.includes('001-chocolate-cake.md'))!,
+      [...writtenFiles.keys()].find((p) => p.includes('chocolate-cake.md'))!,
     );
 
     // Second export — should overwrite without error
     await adapter.renderVault(recipes, '/exports/test-job/vault');
     const secondContent = writtenFiles.get(
-      [...writtenFiles.keys()].find((p) => p.includes('001-chocolate-cake.md'))!,
+      [...writtenFiles.keys()].find((p) => p.includes('chocolate-cake.md'))!,
     );
 
     // Content should be identical (idempotent)

@@ -18,7 +18,7 @@ export class StatelessStack extends cdk.Stack {
     super(scope, id, props);
 
     const bedrockModelArn =
-      props.bedrockModelArn ?? 'arn:aws:bedrock:*::foundation-model/anthropic.claude-3-haiku-20240307-v1:0';
+      props.bedrockModelArn ?? 'arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0';
 
     this.heirloomPolicy = new iam.ManagedPolicy(this, 'HeirloomTranscribePolicy', {
       statements: [

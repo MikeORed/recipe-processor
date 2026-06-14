@@ -77,8 +77,11 @@ export class IngestService {
       }
     }
 
-    // Sort by modified date ascending
-    entries.sort((a, b) => a.modified.localeCompare(b.modified));
+    // Sort by filename ascending — works for both timestamp-named files
+    // (e.g. 20260427_151228.jpg, Scan_20260613_164122.jpg) and user-named
+    // files (e.g. 01-grandmas-cake.jpg) since lexicographic order matches
+    // the user's intended sequence.
+    entries.sort((a, b) => a.file.localeCompare(b.file));
 
     // Write manifest
     const csv = serializeManifest(entries);

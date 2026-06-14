@@ -97,19 +97,22 @@ function createMockStructureExtractor(overrides: {
         throw new Error(`Extraction failed for recipe ${input.recipeNumber}`);
       }
       if (recipes[input.recipeNumber]) {
-        return recipes[input.recipeNumber];
+        return [recipes[input.recipeNumber]];
       }
-      return {
+      return [{
         jobName: input.jobName,
         recipeNumber: input.recipeNumber,
         source: input.source,
         title: `Recipe ${input.recipeNumber}`,
+        author: null,
+        year: null,
+        tags: [],
         ingredients: ['ingredient1'],
         instructions: ['step1'],
-        notes: '',
+        notes: [],
         imageKeys: input.imageKeys,
         confidence: { title: 0.9, ingredients: 0.85, instructions: 0.88, notes: 0.7 },
-      };
+      }];
     },
   };
 }

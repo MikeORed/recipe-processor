@@ -6,7 +6,7 @@ import type { Recipe } from '../../domain/models/recipe.js';
 import {
   renderRecipeMarkdown,
   renderIndexMarkdown,
-  buildVaultFilename,
+  buildVaultFilenames,
 } from '../../domain/services/markdown-utils.js';
 
 /**
@@ -25,9 +25,12 @@ export class ObsidianVaultAdapter implements MarkdownRendererPort {
     // Ensure the output directory exists
     await this.fileSystem.createDirectory(outputDir);
 
+    // Build deduplicated filename map
+    const filenames = buildVaultFilenames(recipes);
+
     // Write one Markdown file per recipe
     for (const recipe of recipes) {
-      const filename = buildVaultFilename(recipe.recipeNumber, recipe.title);
+      const filename = filenames.get(recipe.recipeNumber) ?? `${recipe.recipeNumber}.md`;
       const filePath = join(outputDir, filename);
       const content = renderRecipeMarkdown(recipe);
       await this.fileSystem.writeFile(filePath, content);
