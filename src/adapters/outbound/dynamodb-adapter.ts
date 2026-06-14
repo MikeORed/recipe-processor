@@ -29,6 +29,8 @@ export class DynamoDBAdapter implements DataStore {
     );
   }
 
+  // TODO: Add pagination. Single Query works for family-scale collections (dozens to low hundreds)
+  // but will silently truncate at 1MB response size for larger datasets.
   async getRecipesByJob(jobName: string): Promise<Recipe[]> {
     const response = await this.docClient.send(
       new QueryCommand({

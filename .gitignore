@@ -54,6 +54,9 @@ yarn.lock
 pnpm-lock.yaml
 *.tgz
 
+# Local-only working files (notes, reports, drafts — never committed)
+local-only/
+
 # Misc
 *.pid
 *.seed

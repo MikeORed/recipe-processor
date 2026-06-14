@@ -15,6 +15,9 @@ export class S3Adapter implements ObjectStore {
     this.client = new S3Client({ region });
   }
 
+  // TODO: This buffers the entire file in memory. Fine for typical recipe-card photos (1–5MB),
+  // but would OOM on very large files without a useful error. Consider streaming upload via
+  // createReadStream for robustness, or at minimum a file-size check with a clear error message.
   async upload(localPath: string, key: string): Promise<void> {
     const body = await readFile(localPath);
     await this.client.send(

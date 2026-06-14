@@ -1,62 +1,62 @@
 # 📖 Heirloom — Digitize Your Family Recipes
 
-**Turn shoeboxes of handwritten recipe cards and community cookbook pages into a living, searchable, beautifully formatted collection.**
+Turn shoeboxes of handwritten recipe cards and community cookbook pages into a searchable, formatted collection.
 
-Heirloom is a local-first CLI that ingests photos of recipe flashcards and cookbook pages — taken in bulk, in order — and produces structured, first-pass transcriptions ready for human review. OCR runs via AWS Textract, structured data persists in DynamoDB, and output is exported in three complementary formats: a printable PDF cookbook, an interlinked Obsidian vault, and direct datastore access for future tooling.
+Heirloom (love the names the machine makes up for these things, gotta have a title) is a local-first CLI that ingests photos of recipe flashcards and cookbook pages, taken in bulk and in order, and produces structured, first-pass transcriptions ready for human review. OCR runs via AWS Textract, structured data persists in DynamoDB, and output exports as a printable PDF cookbook, an interlinked Obsidian vault, or direct datastore access for future tooling.
 
----
+## The problem & solution
 
-## The Problem
+My family's recipes live on index cards, in spiral-bound cookbooks, and on notebook pages. They're fading, scattered, and one coffee spill away from gone. Manually transcribing dozens (or hundreds) of them would take quite a lot of tedious effort.
 
-Family recipes live on index cards, in spiral-bound church cookbooks, and on stained notebook pages. They're fragile, scattered, and one coffee spill away from gone. Manually transcribing dozens (or hundreds) of them is a chore nobody finishes.
-
-## The Idea
-
-Photograph the whole stack. Let the machine do the first pass. Fix what it gets wrong. Keep the originals linked so nothing is lost.
-
----
+So instead, we photograph the whole stack, have the machine generate/manage job docs to connect photos to the recipes, let the machine do the first pass, fix what it gets wrong, and of course we keep the original photos linked so nothing is lost.
 
 ## Input
 
-### Image Corpus
+### Image corpus
 
-A directory of photos, taken **in order**, covering one or both of these source types:
+After you initialize a job, you can drop in a collection of photos/images into the images folder for that job which can cover at least these two types of collection (you can mix em if you want to):
 
-#### a) Recipe Flashcards
+#### a) Recipe flashcards
 
-Standard index-card-style recipe cards, photographed in sequence. Supported capture orders:
+Index-card-style recipe cards. You might photograph front and back, or quarter a large card into multiple shots, to keep things grouped, you (human) will assign which photos belong together via `recipe_number` in the manifest, and the LLM does its best to stitch the OCR text from those photos into coherent recipe(s).
 
-| Layout | Photo Sequence |
-|---|---|
-| Simple (front/back) | front → back |
-| Quartered (large or dense cards) | front-top → front-bottom → back-top → back-bottom |
+#### b) Community cookbook pages
 
-Blank sections are **skipped** during capture — no need to photograph empty backs or unused quadrants. The user assigns groupings explicitly via the manifest CSV (see Pipeline below).
+Pages from bound or stapled recipe booklets (neighborhood cookbooks, family reunion collections, etc.), photographed page-by-page, `recipe_number` is still used here, the system does expect the possibility of multiple recipes per page, so you only need to keep as granular as you need to preserve recipes that cross over pages.
 
-#### b) Community Cookbook Pages
+### Phrasing preservation
 
-Pages from bound or stapled recipe booklets (church cookbooks, family reunion collections, etc.), photographed page-by-page in reading order.
+These are familial recipes across generations: handwriting styles vary, ingredients may be regional or archaic ("oleo", "a coffee cup of flour"), and formatting is inconsistent by nature. The pipeline is tolerant of all of this and preserves original voice rather than normalizing it. We're not trying to rewrite anything in the pipeline itself.
 
-### Context
+### How it works
 
-These are **familial recipes across generations** — handwriting styles vary, ingredients may be regional or archaic ("oleo", "a coffee cup of flour"), and formatting is inconsistent by nature. The transcription pipeline should be tolerant of all of this and preserve the original voice rather than normalize it.
+Photos are sorted by filename in the manifest. Name them so they sort in the order you want (timestamp-prefixed filenames from a scanner work well). The system groups photos by their assigned `recipe_number`, runs OCR on each, concatenates the text, and hands it to the LLM with instructions to make its best attempt at ordering and stitching the content into complete recipes.
 
----
+Blank or irrelevant photos can just be left without a `recipe_number` in the manifest and they'll be skipped.
+
+### Why manual grouping?
+
+Could the system detect recipe boundaries automatically? Sure, an LLM/agentic workflow or an agent with branching logic on "does this look like a new recipe" could handle it. But LLMs are non-deterministic, and this felt like the wrong place to trust that. These are family recipes. Scrolling through the manifest, connecting photos to their cards/pages/groups, was part of the experience for me. Not everything needs to be automated, and this particular step costs minutes while buying certainty.
 
 ## Architecture
 
-### Local-First CLI + AWS Backend
+### Local-first CLI + AWS backend
 
-Heirloom runs as a local CLI tool using local AWS credentials. Cloud resources are limited to what the pipeline needs: image storage, OCR, and structured data persistence. No deployed compute — no Lambdas, no Step Functions. The CLI orchestrates everything.
+The CLI calls AWS for three things: storing images, running OCR, and persisting structured data. No deployed compute: no Lambdas, no Step Functions. The CLI orchestrates everything locally using your AWS credentials.
 
-### Hexagonal (Ports & Adapters)
+<!-- TODO: remove this feller when I've made that update, also, for anyone reading: what do you call a shortsighted doe when she forgets her glasses at home? ... no idea (say it out loud... australian accent will help)-->
+### Why cloud state for a local CLI?
 
-Strict dependency direction following the ports and adapters pattern:
+When you've been spending 90% of your time with the AWS hammer, everything looks like a DynamoDB nail. The pipeline already requires AWS credentials for Textract and Bedrock, so adding a state table isn't a new dependency. At the scale most families would put through this (a few hundred recipes at most), there's little operational difference between cloud and local storage, so I'll definitely add a local store option in a future pass.
 
-- `domain/` — pure business logic, zero external dependencies. Models, ports (interfaces), and services.
-- `adapters/` — port implementations. Only layer that touches AWS SDK, file system, or export libraries.
-- `shared/` — cross-cutting concerns: logger, custom errors, schemas.
-- `config/` — Convict configuration schemas.
+### Hexagonal (ports & adapters)
+
+Ports and adapters pattern:
+
+- `domain/`: pure business logic, zero external dependencies. Models, ports (interfaces), and services.
+- `adapters/`: port implementations. Only layer that touches AWS SDK, file system, or export libraries.
+- `shared/`: cross-cutting concerns (logger, custom errors, schemas). Available to all layers.
+- `config/`: Convict configuration schemas. Available to all layers.
 
 ```
 heirloom/
@@ -82,21 +82,17 @@ heirloom/
 └── .kiro/steering/                 # Project steering docs
 ```
 
-### Dependency Rules (strict)
+### Dependency rules
 
 - `domain/` → depends on nothing. No AWS SDK, no file system, no adapters.
 - `adapters/` → depends on `domain/` (implements port interfaces).
-- `shared/` → depends on nothing. Consumed by all layers.
-- `config/` → depends on nothing. Consumed by all layers.
+- `shared/` → nothing. Available to all layers.
+- `config/` → nothing. Available to all layers.
 - `infra/` → depends on `src/` only for reference constants (table names, bucket names).
-
----
 
 ## Pipeline
 
-### Job Management
-
-Before running pipeline commands, set the active job:
+### Job management
 
 ```
 heirloom init moms-card-box     # create a new job (auto-sets as active)
@@ -104,23 +100,23 @@ heirloom jobs                    # list all jobs + status
 heirloom use moms-card-box       # switch active job to an existing one
 ```
 
-All subsequent commands (`ingest`, `transcribe`, `export`) operate against the active job. `init` automatically sets the new job as active. `use` is for switching between existing jobs. The active job is persisted locally so it survives between CLI invocations.
+All commands operate against the active job. `init` sets it automatically; `use` switches between existing ones. Persisted locally.
 
 ### Step 1: Initialize — `heirloom init <job-name>`
 
-Creates a local job landing zone under the `.gitignore`d `jobs/` directory:
+Creates a job landing zone under the `.gitignore`d `jobs/` directory:
 
 ```
 jobs/
 └── moms-card-box/
-    └── images/             ← User drops photos here
+    └── images/             ← Drop your photos here
 ```
 
-Each job is a self-contained workspace. The user copies or moves their photos into `jobs/<job-name>/images/`, then proceeds to ingest.
+Drop your photos into `jobs/<job-name>/images/` and run ingest.
 
 ### Step 2: Ingest — `heirloom ingest`
 
-Scans `jobs/<active-job>/images/`, sorts by file modified date, and generates (or updates) the **manifest CSV** at `jobs/<active-job>/manifest.csv`:
+Scans `jobs/<active-job>/images/`, sorts by filename, and generates (or updates) the manifest CSV at `jobs/<active-job>/manifest.csv`:
 
 ```csv
 file,modified,recipe_number,source
@@ -132,10 +128,10 @@ IMG_0005.jpg,2026-04-25T10:02:01,,
 IMG_0006.jpg,2026-04-25T10:02:06,,
 ```
 
-The user opens the CSV and fills in two columns:
+Open the CSV and fill in two columns:
 
-- **`recipe_number`** — which images belong to the same recipe. All images sharing a number are grouped together, in modified-date order (front before back, top before bottom).
-- **`source`** — which collection the recipe came from. **Sparse fill**: only set when the source changes; the parser inherits the last non-empty value downward.
+- `recipe_number`: which images belong to the same recipe. All images sharing a number are grouped together, the invoked llm+json schema will then attempt to make sense of the ocr-ed content across a recipe group and produce as many reasonably complete recipes as it can find from the provided OCR'd content.
+- `source`: which collection the recipe came from. You only need to set this when the source changes; the parser inherits the last non-empty value downward.
 
 Completed example:
 
@@ -151,11 +147,11 @@ IMG_0007.jpg,2026-04-25T10:02:30,4,
 IMG_0008.jpg,2026-04-25T10:02:45,5,
 ```
 
-Here recipes 1–4 are from Mom's Card Box, recipe 5 onward from First Baptist. No layout mode flags, no assumptions about capture pattern — a 2-image card and a 4-image card in the same batch work fine.
+Here recipes 1-2 (photos 1-4) are from Mom's Card Box, recipe 3 onward from Inherited Recipe Book.
 
 ### Step 3: Transcribe — `heirloom transcribe`
 
-Reads `jobs/<active-job>/manifest.csv`, then for each recipe group:
+Reads the manifest, then for each recipe group:
 
 ```
 ┌─────────────────┐
@@ -169,7 +165,7 @@ Reads `jobs/<active-job>/manifest.csv`, then for each recipe group:
        │
        ▼
 ┌─────────────────┐
-│  AWS Textract    │  ← Async batch OCR (StartDocumentAnalysis)
+│  AWS Textract    │  ← Async batch OCR (StartDocumentTextDetection)
 │  (handwriting +  │    CLI polls for completion
 │   printed text)  │
 └──────┬──────────┘
@@ -192,22 +188,22 @@ Reads `jobs/<active-job>/manifest.csv`, then for each recipe group:
 └──────┬──────────┘
 ```
 
-#### Job Tracking
+#### Job tracking
 
-A DynamoDB table tracks processing state per image/document:
+A DynamoDB table tracks processing state:
 
 - Which images have been uploaded to S3
-- Which Textract jobs have been submitted, are in progress, or completed
-- Which results have been parsed and persisted as recipe records
+- Which Textract jobs are submitted, in progress, or done
+- Which results have been parsed and persisted
 - Error/retry state for failed jobs
 
-The CLI checks this table to determine what work remains — `heirloom transcribe` only submits jobs for unprocessed documents, making the pipeline resumable and idempotent.
+The CLI checks this table to determine what work remains: `heirloom transcribe` only processes unfinished documents. Run it twice, nothing duplicates.
 
 ### Step 4: Export — `heirloom export <format>`
 
-Pulls structured recipe data from DynamoDB and generates output locally. Before exporting, the CLI verifies that local job state (manifest CSV, image files) is consistent with the cloud datastore — flagging any drift before generating artifacts.
+Pulls structured recipe data from DynamoDB and generates output locally.
 
-Images embedded in exports (PDF thumbnails, Obsidian attachments) reference the local `jobs/<job-name>/images/` path — no re-download from S3.
+Images embedded in exports (PDF thumbnails, Obsidian attachments) reference the local `jobs/<job-name>/images/` path, no re-download from S3.
 
 ```
 ┌─────────────────┐     ┌─────────────────┐
@@ -221,112 +217,89 @@ Images embedded in exports (PDF thumbnails, Obsidian attachments) reference the 
        └──► heirloom export vault <dir> → Obsidian Vault
 ```
 
----
+## AWS resources (CDK)
 
-## AWS Resources (CDK)
-
-### Stateful Stack (RETAIN policy)
+### Stateful stack (RETAIN policy)
 
 | Resource | Purpose |
 |---|---|
-| S3 Bucket | Permanent image storage — source photos organized by job, referenced by all outputs |
-| DynamoDB Table: Recipes | Canonical recipe records (structured transcriptions) |
-| DynamoDB Table: Jobs | Processing state tracking per image/document |
+| S3 Bucket | Image storage, organized by job |
+| DynamoDB Table: Recipes | Canonical recipe records |
+| DynamoDB Table: Jobs | Processing state per job |
 
-### Stateless Stack
+### Stateless stack
 
 | Resource | Purpose |
 |---|---|
-| IAM Policy | Textract access, Bedrock invoke, scoped S3 read, DynamoDB read/write |
-| Bedrock Inference Profile | Model access for structure extraction FM, tagged for cost attribution |
+| IAM Policy | Textract, Bedrock, scoped S3, DynamoDB access |
+| Bedrock Inference Profile | Model access for structure extraction, tagged for cost attribution |
 
-Minimal footprint. No compute resources deployed — the CLI runs locally and calls AWS APIs directly with local credentials.
-
----
+No compute deployed. CLI runs locally, calls AWS APIs directly.
 
 ## Output
 
-Three synchronized output formats, all exported from the DynamoDB datastore:
+Three output formats, all derived from DynamoDB:
 
-### 1. 📄 PDF Cookbook
+### PDF cookbook
 
-A print-ready PDF compiling all transcribed recipes into a cohesive book.
+A print-ready PDF. Table of contents with page numbers, recipes grouped by category or source order, title/attribution/ingredients/instructions per recipe, optional thumbnail of the original card alongside the transcription.
 
-- Table of contents with page numbers
-- Recipes grouped by category (if detectable) or source order
-- Each recipe includes: title, attribution/source, ingredients, instructions
-- Optional: thumbnail of the original card/page alongside the transcription
-- Clean, readable typography — something you'd actually want to print and bind
+### Obsidian vault
 
-### 2. 🗂️ Obsidian Vault
-
-A fully structured [Obsidian](https://obsidian.md) vault for browsing, searching, linking, and extending the collection over time.
+A structured [Obsidian](https://obsidian.md) vault for browsing, searching, and extending the collection.
 
 ```
 vault/
 ├── Recipes/
-│   ├── Grandma's Cornbread.md
-│   ├── Aunt Ruth's Chicken and Dumplings.md
+│   ├── party-cocktail-meatballs.md
+│   ├── tomato-beef-and-green-pepper.md
 │   └── ...
 ├── Sources/
-│   ├── Mom's Card Box.md
-│   └── First Baptist Cookbook 1987.md
-├── Tags/
-│   └── (managed via frontmatter)
+│   ├── family-recipe-book.md         ← dataview query for tag source/family-recipe-book
+│   └── moms-card-box.md
 ├── Attachments/
-│   └── originals/        ← source images from local job directory
+│   └── originals/                    ← source images copied from jobs/<name>/images/
 └── README.md
 ```
 
-Each recipe note includes:
+Each recipe note has YAML frontmatter with tags (category tags + `source/<source-snake-name>`), confidence scores, author, year, and image references. Sources are dataview pages that automatically list all recipes tagged with that source. No manual cross-linking: the vault stays self-organizing.
 
-- YAML frontmatter (source, category, tags, date if known, confidence score)
-- Ingredients list
-- Instructions
-- Embedded or linked original image(s)
-- Wikilinks to source, related recipes, and shared ingredients
+### DynamoDB datastore
 
-### 3. 💾 DynamoDB Datastore
+The canonical layer both the PDF and vault export from. Structured recipe records, S3 key references to source images (resolved to local paths during export), confidence scores per field, review/edit status.
 
-The persistent, canonical data layer that both the PDF and the vault are exported from.
+Re-exportable: update a record, regenerate the PDF or vault.
 
-- Structured recipe records (title, ingredients, steps, metadata)
-- S3 key references to original source image(s) per recipe (resolved to local `jobs/<job-name>/images/` paths during export)
-- Transcription confidence scores per field
-- Review/edit status tracking (unreviewed → reviewed → approved)
-- Re-exportable — update a record, regenerate the PDF or vault
+> Review/edit workflow deferred. V1 is ingest → transcribe → export.
 
-> Review/edit workflow deferred to a later version. V1 focuses on ingest → transcribe → export.
-
----
-
-## Tech Stack
+## Tech stack
 
 ### Core
 
-- **Language:** TypeScript (~5.9), strict mode, ES2022 target, NodeNext module resolution
-- **Runtime:** Node.js 22.x
-- **Infrastructure:** AWS CDK v2 (`aws-cdk-lib`)
-- **Build:** `tsc` (no bundler for app code)
-- **CLI entry:** `npx tsx bin/heirloom.ts`
+| | |
+|---|---|
+| Language | TypeScript (~5.9), strict mode, ES2022 target, NodeNext module resolution |
+| Runtime | Node.js 22.x |
+| Infrastructure | AWS CDK v2 (`aws-cdk-lib`) |
+| Build | `tsc` (no bundler for app code) |
+| CLI entry | `npx tsx bin/heirloom.ts` |
 
-### Key Libraries
+### Libraries
 
-- **zod** (v4) — runtime schema validation for Textract responses, domain models, CLI input. Import from `zod/v4`.
-- **convict** — typed, environment-aware configuration (AWS region, bucket name, table names, etc.)
-- **@aws-sdk/client-s3** — image upload/download
-- **@aws-sdk/client-textract** — OCR job submission and result retrieval
-- **@aws-sdk/client-bedrock-runtime** — FM invocation for structure extraction (structured output)
-- **@aws-sdk/lib-dynamodb** — recipe and job record persistence
+| Package | Role |
+|---|---|
+| zod (v4) | Runtime schema validation for Textract responses, domain models, CLI input |
+| convict | Typed, environment-aware configuration (AWS region, bucket name, table names) |
+| @aws-sdk/client-s3 | Image upload/download |
+| @aws-sdk/client-textract | OCR job submission and result retrieval |
+| @aws-sdk/client-bedrock-runtime | FM invocation for structure extraction (structured output) |
+| @aws-sdk/lib-dynamodb | Recipe and job record persistence |
 
 ### Testing
 
-- **Jest 30** with `ts-jest`
-- **fast-check** for property-based testing
-- Colocated test files: `foo.unit.ts` (unit), `foo.pbt.ts` (property-based)
-- Integration tests in `test/`
+Jest 30 with `ts-jest`. Property-based testing via `fast-check`. Colocated test files: `foo.unit.ts` (unit), `foo.pbt.ts` (property-based). Integration tests in `test/`.
 
-### Naming Conventions
+### Naming conventions
 
 | Scope | Convention | Example |
 |---|---|---|
@@ -338,30 +311,31 @@ The persistent, canonical data layer that both the PDF and the vault are exporte
 | CDK construct IDs | `PascalCase` | `RecipeTable` |
 | AWS resource names | `kebab-case` | `heirloom-recipes` |
 
-### Error Handling
+### Error handling
 
 Custom error classes extending `Error` with a `cause` property, centralized in `src/shared/errors.ts`.
 
-### Commit Conventions
+### Commit conventions
 
 Conventional Commits enforced via `commitlint` + Husky pre-commit hooks.
 
----
+## Design principles
 
-## Design Principles
+The goal is a first-pass transcription good enough for a human to review. Confidence scores flag where the machine was guessing.
 
-- **First pass, not final pass.** The goal is a solid transcription that a human can quickly review and correct — not perfection out of the box. Surface confidence scores so reviewers know where to focus.
-- **Preserve voice.** "A pinch" stays "a pinch." Don't normalize Grandma's language into sterile recipe-blog format.
-- **Images are the source of truth.** Every transcription links back to its source photo. S3 is the durable store; the local `jobs/` directory is the working copy used for exports. Both reference the same images — S3 keys map to local paths.
-- **Regenerable outputs.** DynamoDB is canonical. PDFs and vaults are derived artifacts that can be rebuilt after edits.
-- **Batch-friendly.** Designed for processing dozens to hundreds of recipes in one go, not one at a time.
-- **Resumable and idempotent.** Job tracking means you can stop and restart without reprocessing. Running the same command twice doesn't duplicate work.
-- **Pluggable OCR.** Textract sits behind an `OCRProvider` port. Swappable for Tesseract, a vision LLM, or another service without touching domain logic.
-- **LLM does the thinking, schemas enforce the shape.** Structure extraction uses Bedrock FM structured output validated by Zod — a strongly-formed 0-shot system instruction guides the FM on how to interpret subjective fields (category, confidence, attribution). The output shape is deterministic and type-safe.
+Voice in, voice out.
 
----
+Every transcription links back to its source photo. S3 is the durable store; `jobs/` is the local working copy. Both reference the same images: S3 keys map to local paths.
 
-## Common Commands
+DynamoDB is canonical. PDFs and vaults are derived, rebuildable after edits.
+
+Batch-oriented: dozens to hundreds of recipes at once. Job tracking means you can stop and restart without reprocessing. Same command twice, no duplicate work.
+
+Textract sits behind an `OCRProvider` port, swappable for Tesseract or a vision LLM without touching domain logic.
+
+Structure extraction uses Bedrock FM structured output validated by Zod. A 0-shot system instruction guides the FM on subjective fields (category, confidence, attribution). The output shape is deterministic and type-safe.
+
+## Common commands
 
 | Command | Description |
 |---|---|
@@ -371,22 +345,32 @@ Conventional Commits enforced via `commitlint` + Husky pre-commit hooks.
 | `cdk synth` | Synthesize CloudFormation templates |
 | `cdk deploy --all` | Deploy S3 bucket, DynamoDB tables, IAM policies |
 | `cdk destroy --all` | Tear down all stacks |
-| `heirloom init <job-name>` | Create a new job landing zone under `jobs/` and set it as active |
-| `heirloom jobs` | List all local jobs and their processing status |
-| `heirloom use <job-name>` | Switch the active job to an existing one |
-| `heirloom ingest` | Scan images and generate manifest CSV for the active job |
-| `heirloom transcribe` | Upload unprocessed images to S3, run Textract + FM |
-| `heirloom export pdf` | Generate PDF cookbook from active job's recipes |
-| `heirloom export vault <dir>` | Generate Obsidian vault from active job's recipes |
+| `heirloom init <job-name>` | Create a new job landing zone, set as active |
+| `heirloom jobs` | List all local jobs and their status |
+| `heirloom use <job-name>` | Switch active job |
+| `heirloom ingest` | Scan images, generate manifest CSV |
+| `heirloom transcribe` | Upload images to S3, run Textract + FM |
+| `heirloom export pdf` | Generate PDF cookbook |
+| `heirloom export vault <dir>` | Generate Obsidian vault |
 
----
+<!-- Need me an example output section -->
+
+## Known limitations
+
+Personal project. Works, not bulletproof. Known rough edges:
+
+DynamoDB queries are unpaginated. `getRecipesByJob` returns all items in a single query. Fine for family-scale collections (dozens to low hundreds), would need pagination for anything larger.
+
+Textract polling has no timeout. The adapter polls indefinitely on 2-second intervals. A stuck Textract job would hang the CLI.
+
+S3 uploads buffer the entire file in memory. Recipe-card photos are typically 1–5MB so this is fine in practice, but an accidental RAW file would blow up memory without a useful error.
+
+The stateful stack may be removable. Now that the pipeline works end-to-end, DynamoDB job-tracking state may be unnecessary, and a future audit could simplify to local-only state. Not urgent; infra cost is zero at rest.
 
 ## Status
 
-🧠 **Concept phase** — this README is the design sketch. No code yet.
-
----
+Working. 106 recipes digitized from first batch. Pipeline is end-to-end functional. Export outputs (PDF and Obsidian vault) are rough first-pass: they work but need a TLC pass on formatting, frontmatter richness, and vault structure before they match the intended design above.
 
 ## License
 
-TBD
+[MIT](./LICENSE)

@@ -39,6 +39,8 @@ export class TextractAdapter implements OCRProvider {
     return this.pollForResult(jobId);
   }
 
+  // TODO: Add a max-poll timeout (e.g. 5 minutes) so a stuck Textract job doesn't hang indefinitely.
+  // Consider exponential backoff instead of fixed 2s intervals.
   private async pollForResult(jobId: string): Promise<OCRResult> {
     while (true) {
       const response = await this.client.send(
