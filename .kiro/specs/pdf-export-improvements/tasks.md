@@ -82,8 +82,8 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
 - [x] 4. Checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Implement ExportService grouping, sorting, and image pre-processing
-  - [ ] 5.1 Update `ExportService` in `src/domain/services/export-service.ts`
+- [x] 5. Implement ExportService grouping, sorting, and image pre-processing
+  - [x] 5.1 Update `ExportService` in `src/domain/services/export-service.ts`
     - Update `export()` method signature to accept `PdfRenderOptions`
     - Implement chapter grouping: group recipes by `category` in canonical order, map "uncategorized" → "Odds & Ends", omit empty chapters
     - Implement alphabetical sorting (case-insensitive) within each chapter group
@@ -91,25 +91,25 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Construct `ChapterGroup[]` array and pass to `pdfRenderer.render(chapters, options, outputPath)`
     - _Requirements: 6.3, 6.4, 6.5, 6.6, 14.3, 15.4_
 
-  - [ ] 5.2 Write property test for chapter grouping (Property 4)
+  - [x] 5.2 Write property test for chapter grouping (Property 4)
     - **Property 4: Chapter grouping preserves canonical order and completeness**
     - Verify canonical order, no empty groups, every recipe in exactly one group, alphabetical within group
     - File: `src/domain/services/export-service.pbt.ts`
     - **Validates: Requirements 5.5, 5.7, 6.3, 6.4, 6.5**
 
-  - [ ] 5.3 Write property test for flat mode (Property 5)
+  - [x] 5.3 Write property test for flat mode (Property 5)
     - **Property 5: Flat mode produces single alphabetically-sorted group**
     - Verify single group, all recipes present, alphabetically sorted
     - File: `src/domain/services/export-service.pbt.ts`
     - **Validates: Requirements 6.6, 14.3**
 
-  - [ ] 5.4 Write property test for source appendix grouping (Property 6)
+  - [x] 5.4 Write property test for source appendix grouping (Property 6)
     - **Property 6: Source appendix grouping and ordering**
     - Verify distinct source keys, alphabetical source ordering, alphabetical recipes within source, empty/blank → "Unknown Source"
     - File: `src/domain/services/export-service.pbt.ts`
     - **Validates: Requirements 7.2, 7.4, 7.5**
 
-  - [ ] 5.5 Create image pre-processing utility in `src/domain/services/image-processor.ts`
+  - [x] 5.5 Create image pre-processing utility in `src/domain/services/image-processor.ts`
     - Implement `preprocessImages(imageKeys, jobName, targetWidthPx, targetDpi): Promise<ProcessedImage[]>`
     - Resolve imageKey → local path (`jobs/<jobName>/images/<filename>`)
     - Use `sharp` to resize to target width at 150 DPI, write to temp directory as JPEG
@@ -117,14 +117,14 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Handle missing files gracefully (skip, log warning)
     - _Requirements: 11.5, 11.7, 11.8_
 
-  - [ ] 5.6 Write property test for ImageKey path resolution (Property 11)
+  - [x] 5.6 Write property test for ImageKey path resolution (Property 11)
     - **Property 11: ImageKey path resolution**
     - Verify that any imageKey `"<jobName>/<filename>"` resolves to `"jobs/<jobName>/images/<filename>"`
     - File: `src/domain/services/export-service.pbt.ts`
     - **Validates: Requirements 11.5**
 
 - [ ] 6. Rewrite PdfKitAdapter — body rendering with chapter dividers and recipe formatting
-  - [ ] 6.1 Scaffold the new `PdfKitAdapter` structure in `src/adapters/outbound/pdfkit-adapter.ts`
+  - [~] 6.1 Scaffold the new `PdfKitAdapter` structure in `src/adapters/outbound/pdfkit-adapter.ts`
     - Update class to implement the new `PdfRendererPort` signature
     - Add `render()` orchestrating Body_TOC_Merge pipeline
     - Add helper method stubs: `renderBody()`, `renderToc()`, `mergeDocuments()`, `renderChapterDivider()`, `renderRecipe()`, `renderSourceAppendix()`, `estimateRecipeHeight()`, `stampHeaders()`
@@ -132,7 +132,7 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Define typography scale constants
     - _Requirements: 10.1, 10.2, 10.3, 10.5, 15.1, 15.2_
 
-  - [ ] 6.2 Implement `renderBody()` — chapter dividers and recipe pages
+  - [~] 6.2 Implement `renderBody()` — chapter dividers and recipe pages
     - Render chapter divider pages (28pt Helvetica-Bold, centered horizontally and vertically)
     - Render recipe pages with: title (18pt bold), decorative rule under title, attribution line, source line, sections (Ingredients, Instructions, Notes)
     - Track page positions for each recipe during rendering (for TOC)
@@ -141,48 +141,48 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Enforce cross-chapter page isolation (no same-page recipes from different chapters)
     - _Requirements: 6.1, 6.2, 8.1, 8.2, 8.3, 8.4, 10.5, 10.6, 13.1, 13.2_
 
-  - [ ] 6.3 Implement attribution and source rendering in `renderRecipe()`
+  - [~] 6.3 Implement attribution and source rendering in `renderRecipe()`
     - Format attribution: "By [author], [year]" | "By [author]" | "[year]" | none
     - Render in 10pt Times-Italic between title and source line
     - Handle long author names (natural wrap within margins)
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-  - [ ] 6.4 Write property test for attribution format (Property 3)
+  - [~] 6.4 Write property test for attribution format (Property 3)
     - **Property 3: Attribution format correctness**
     - Generate arbitrary author/year combinations and verify format
     - File: `src/adapters/outbound/pdfkit-adapter.pbt.ts`
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
 
-  - [ ] 6.5 Implement overflow pagination with continuation headers
+  - [~] 6.5 Implement overflow pagination with continuation headers
     - Use `doc.heightOfString()` to measure each content block before rendering
     - If block exceeds remaining space, trigger manual page break
     - Render continuation header "[Recipe Title], continued" at top of new page
     - Skip continuation header if recipe fits on one page
     - _Requirements: 9.1, 9.2, 9.3_
 
-  - [ ] 6.6 Write property test for continuation header format (Property 9)
+  - [~] 6.6 Write property test for continuation header format (Property 9)
     - **Property 9: Continuation header format**
     - Verify any title string produces exactly "[title], continued"
     - File: `src/adapters/outbound/pdfkit-adapter.pbt.ts`
     - **Validates: Requirements 9.2**
 
-  - [ ] 6.7 Write property test for multi-per-page fit decision (Property 7)
+  - [~] 6.7 Write property test for multi-per-page fit decision (Property 7)
     - **Property 7: Multi-per-page fit decision**
     - Verify that given remaining space R and height H, same-page iff R >= H + 24.5
     - File: `src/adapters/outbound/pdfkit-adapter.pbt.ts`
     - **Validates: Requirements 8.1, 8.2**
 
-  - [ ] 6.8 Write property test for cross-chapter page isolation (Property 8)
+  - [~] 6.8 Write property test for cross-chapter page isolation (Property 8)
     - **Property 8: Cross-chapter page isolation**
     - Verify no page contains recipes from different chapters
     - File: `src/adapters/outbound/pdfkit-adapter.pbt.ts`
     - **Validates: Requirements 8.4**
 
-- [ ] 7. Checkpoint — Ensure all tests pass
+- [~] 7. Checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 8. Implement TOC rendering, PDF merging, and source appendix
-  - [ ] 8.1 Implement `renderToc()` — table of contents with page numbers
+  - [~] 8.1 Implement `renderToc()` — table of contents with page numbers
     - Render TOC starting on page 1, max 40 entries per page
     - Group entries under chapter headings (flush-left), recipe titles indented 18pt
     - Truncate titles > 70 chars with ellipsis
@@ -192,19 +192,19 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Skip TOC entirely if zero recipes
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8_
 
-  - [ ] 8.2 Implement `mergeDocuments()` — pdf-lib merge of toc.pdf + body.pdf
+  - [~] 8.2 Implement `mergeDocuments()` — pdf-lib merge of toc.pdf + body.pdf
     - Use `pdf-lib` to merge TOC pages before body pages into final output
     - Produce valid PDF with correct cross-reference tables
     - Clean up temporary files
     - _Requirements: 5.4_
 
-  - [ ] 8.3 Write property test for TOC page number offset (Property 10)
+  - [~] 8.3 Write property test for TOC page number offset (Property 10)
     - **Property 10: TOC page number offset**
     - Verify displayed page number = body position + N (TOC page count)
     - File: `src/adapters/outbound/pdfkit-adapter.pbt.ts`
     - **Validates: Requirements 5.3, 5.4**
 
-  - [ ] 8.4 Implement `renderSourceAppendix()` — compact source listing
+  - [~] 8.4 Implement `renderSourceAppendix()` — compact source listing
     - Render after all recipe chapters in body
     - Group recipes by distinct source value, alphabetical by source name
     - Map empty/blank source → "Unknown Source"
@@ -212,21 +212,21 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Use compact layout: 9pt body text, 6pt spacing, 10pt bold source headings
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-  - [ ] 8.5 Implement `stampHeaders()` — retroactive page headers and footers
+  - [~] 8.5 Implement `stampHeaders()` — retroactive page headers and footers
     - Stamp chapter name (left) and recipe title (right) in 8pt font in top margin on recipe content pages
     - Truncate header elements > 50 chars with ellipsis to prevent overlap
     - Render centered page number in footer (8pt, 0.4 grayscale) on recipe content pages
     - Skip headers/footers on TOC and Chapter_Divider pages
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 10.4_
 
-  - [ ] 8.6 Write property test for header/footer page-type invariant (Property 12)
+  - [~] 8.6 Write property test for header/footer page-type invariant (Property 12)
     - **Property 12: Header and footer page-type invariant**
     - Verify headers/footers appear only on recipe content pages, not TOC or divider pages
     - File: `src/adapters/outbound/pdfkit-adapter.pbt.ts`
     - **Validates: Requirements 10.4, 12.1, 12.2**
 
 - [ ] 9. Implement image embedding in PdfKitAdapter
-  - [ ] 9.1 Add image embedding logic to `renderRecipe()` in `src/adapters/outbound/pdfkit-adapter.ts`
+  - [~] 9.1 Add image embedding logic to `renderRecipe()` in `src/adapters/outbound/pdfkit-adapter.ts`
     - In `thumbnail` mode: embed pre-processed images inline at max 300px width, preserving aspect ratio
     - In `full` mode: embed pre-processed images on separate page at max 975px width
     - In `none` mode: no image embedding, no image reference text
@@ -234,7 +234,7 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Render placeholder "Source image not available" in 8pt gray italic if file missing
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.6_
 
-  - [ ] 9.2 Write unit tests for image embedding
+  - [~] 9.2 Write unit tests for image embedding
     - Test thumbnail dimensions and aspect ratio preservation
     - Test full-page image rendering
     - Test placeholder rendering for missing files
@@ -243,32 +243,32 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - _Requirements: 11.1, 11.2, 11.6_
 
 - [ ] 10. Update ExportHandler with CLI options
-  - [ ] 10.1 Update `exportHandler` in `src/adapters/inbound/export-handler.ts`
+  - [~] 10.1 Update `exportHandler` in `src/adapters/inbound/export-handler.ts`
     - Parse new flags: `--images` (none|thumbnail|full, default: thumbnail), `--page-size` (letter|a4, default: letter), `--multi-per-page` (boolean, default: true), `--confidence` (boolean, default: true), `--no-chapters` (boolean, default: false)
     - Construct `PdfRenderOptions` object from parsed flags with correct defaults
     - Reject unrecognized option values with error message listing valid values, exit code 1
     - Pass options to `ExportService.export()` (updated signature)
     - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.3, 15.5_
 
-  - [ ] 10.2 Write property test for CLI option parsing (Property 13)
+  - [~] 10.2 Write property test for CLI option parsing (Property 13)
     - **Property 13: CLI option parsing with defaults and rejection**
     - Generate arbitrary valid flag combinations and verify correct PdfRenderOptions output
     - Generate invalid values for --images and --page-size and verify rejection
     - File: `src/adapters/inbound/export-handler.pbt.ts`
     - **Validates: Requirements 14.1, 14.2, 15.3, 15.5**
 
-- [ ] 11. Checkpoint — Ensure all tests pass
+- [~] 11. Checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 12. Integration wiring and final validation
-  - [ ] 12.1 Wire updated ExportService to PdfKitAdapter in ExportHandler
+  - [~] 12.1 Wire updated ExportService to PdfKitAdapter in ExportHandler
     - Update adapter instantiation in ExportHandler to pass image-preprocessed data
     - Integrate image pre-processing step in ExportService before calling `pdfRenderer.render()`
     - Ensure `ExportService.export()` calls image processor when `imageMode !== 'none'`
     - Verify end-to-end flow: CLI → ExportHandler → ExportService (grouping + image prep) → PdfKitAdapter (Body_TOC_Merge)
     - _Requirements: 15.3, 15.4_
 
-  - [ ] 12.2 Write integration test for full PDF render pipeline
+  - [~] 12.2 Write integration test for full PDF render pipeline
     - Verify Body_TOC_Merge produces valid PDF with correct page count
     - Verify TOC page numbers match actual recipe positions
     - Verify chapter divider pages present for non-empty categories
@@ -276,14 +276,14 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - File: `test/pdf-export.test.ts`
     - _Requirements: 5.4, 6.1, 8.1_
 
-  - [ ] 12.3 Write integration test for backfill pipeline
+  - [~] 12.3 Write integration test for backfill pipeline
     - Mock Bedrock responses, verify all recipes processed
     - Verify DynamoDB records updated with category/cuisine
     - Verify partial failure handling
     - File: `test/backfill.test.ts`
     - _Requirements: 3.1, 3.4, 3.5_
 
-- [ ] 13. Final checkpoint — Ensure all tests pass
+- [~] 13. Final checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

@@ -1,4 +1,4 @@
-import { ExportService } from './export-service.js';
+import { ExportService, CANONICAL_CATEGORY_ORDER, groupRecipesByCategory } from './export-service.js';
 import type { DataStore } from '../ports/data-store-port.js';
 import type { PdfRendererPort, ChapterGroup, PdfRenderOptions } from '../ports/pdf-renderer-port.js';
 import type { MarkdownRendererPort } from '../ports/markdown-renderer-port.js';
@@ -62,12 +62,11 @@ function createMocks(overrides: {
     },
   };
 
-  let pdfRenderArgs: { recipes: Recipe[]; outputPath: string } | undefined;
+  let pdfRenderArgs: { chapters: ChapterGroup[]; options: PdfRenderOptions; outputPath: string } | undefined;
   const pdfRenderer: PdfRendererPort = {
-    async render(chapters: ChapterGroup[], _options: PdfRenderOptions, outputPath: string): Promise<void> {
-      const recipes = chapters.flatMap((ch) => ch.recipes);
-      calls.push({ method: 'pdfRenderer.render', args: [recipes, outputPath] });
-      pdfRenderArgs = { recipes, outputPath };
+    async render(chapters: ChapterGroup[], options: PdfRenderOptions, outputPath: string): Promise<void> {
+      calls.push({ method: 'pdfRenderer.render', args: [chapters, options, outputPath] });
+      pdfRenderArgs = { chapters, options, outputPath };
     },
   };
 
@@ -186,22 +185,26 @@ describe('ExportService', () => {
   });
 
   describe('recipe sorting', () => {
-    it('sorts recipes by recipeNumber in ascending lexicographic order', async () => {
+    it('groups recipes by category and sorts alphabetically by title within chapters', async () => {
       const recipes = [
-        makeRecipe({ recipeNumber: '003' }),
-        makeRecipe({ recipeNumber: '001' }),
-        makeRecipe({ recipeNumber: '002' }),
+        makeRecipe({ recipeNumber: '003', title: 'Zucchini Bread', category: 'Breads' }),
+        makeRecipe({ recipeNumber: '001', title: 'Apple Pie', category: 'Pies & Pastries' }),
+        makeRecipe({ recipeNumber: '002', title: 'Banana Bread', category: 'Breads' }),
       ];
       const mocks = createMocks({ recipes });
       const service = new ExportService(mocks.dataStore, mocks.pdfRenderer, mocks.markdownRenderer);
 
       await service.export('test-job', 'pdf', './out.pdf');
 
-      const renderedRecipes = mocks.getPdfRenderArgs()!.recipes;
-      expect(renderedRecipes.map((r) => r.recipeNumber)).toEqual(['001', '002', '003']);
+      const chapters = mocks.getPdfRenderArgs()!.chapters;
+      expect(chapters).toHaveLength(2);
+      expect(chapters[0].chapter).toBe('Breads');
+      expect(chapters[0].recipes.map((r) => r.title)).toEqual(['Banana Bread', 'Zucchini Bread']);
+      expect(chapters[1].chapter).toBe('Pies & Pastries');
+      expect(chapters[1].recipes.map((r) => r.title)).toEqual(['Apple Pie']);
     });
 
-    it('handles lexicographic sorting correctly for mixed-length numbers', async () => {
+    it('sorts obsidian format by recipeNumber ascending (lexicographic)', async () => {
       const recipes = [
         makeRecipe({ recipeNumber: '10' }),
         makeRecipe({ recipeNumber: '2' }),
@@ -210,9 +213,9 @@ describe('ExportService', () => {
       const mocks = createMocks({ recipes });
       const service = new ExportService(mocks.dataStore, mocks.pdfRenderer, mocks.markdownRenderer);
 
-      await service.export('test-job', 'pdf', './out.pdf');
+      await service.export('test-job', 'obsidian', './out/');
 
-      const renderedRecipes = mocks.getPdfRenderArgs()!.recipes;
+      const renderedRecipes = mocks.getMdRenderArgs()!.recipes;
       // Lexicographic: "1" < "10" < "2"
       expect(renderedRecipes.map((r) => r.recipeNumber)).toEqual(['1', '10', '2']);
     });
