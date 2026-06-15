@@ -5,6 +5,8 @@ export type { TranscriptionResult } from './transcribe-service.js';
 export { serializeManifest, parseManifest, MANIFEST_COLUMNS } from './csv-utils.js';
 export { ExportService } from './export-service.js';
 export type { ExportFormat, ExportResult } from './export-service.js';
+export { BackfillService } from './backfill-service.js';
+export type { BackfillResult } from './backfill-service.js';
 export {
   renderRecipeMarkdown,
   renderIndexMarkdown,

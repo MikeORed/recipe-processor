@@ -2,6 +2,7 @@ import { initHandler } from './init-handler.js';
 import { ingestHandler } from './ingest-handler.js';
 import { transcribeHandler } from './transcribe-handler.js';
 import { exportHandler } from './export-handler.js';
+import { backfillHandler } from './backfill-handler.js';
 import { jobsHandler } from './jobs-handler.js';
 import { useHandler } from './use-handler.js';
 import type { CommandHandler } from './types.js';
@@ -16,6 +17,7 @@ commands.set('transcribe', transcribeHandler);
 commands.set('export', exportHandler);
 commands.set('jobs', jobsHandler);
 commands.set('use', useHandler);
+commands.set('backfill', backfillHandler);
 
 export function printHelp(): void {
   console.log('Usage: heirloom <command> [options]');
@@ -27,6 +29,7 @@ export function printHelp(): void {
   console.log('  export       Generate output (PDF, Obsidian, etc.)');
   console.log('  jobs         List and manage jobs');
   console.log('  use          Select a job to work with');
+  console.log('  backfill      Re-process recipes with updated extraction');
 }
 
 export async function runCli(argv: string[]): Promise<void> {
