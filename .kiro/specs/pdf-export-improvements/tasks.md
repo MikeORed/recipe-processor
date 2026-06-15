@@ -6,8 +6,8 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
 
 ## Tasks
 
-- [ ] 1. Extend Recipe schema and PdfRendererPort interface
-  - [ ] 1.1 Add `category` and `cuisine` enums and fields to `recipeSchema` in `src/domain/models/recipe.ts`
+- [x] 1. Extend Recipe schema and PdfRendererPort interface
+  - [x] 1.1 Add `category` and `cuisine` enums and fields to `recipeSchema` in `src/domain/models/recipe.ts`
     - Define `categoryEnum` with the 15-item enum (14 canonical + "uncategorized")
     - Define `cuisineEnum` with the 15-item enum
     - Add `category` as required field constrained to `categoryEnum`
@@ -15,21 +15,21 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Retain existing `tags` array unchanged
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
-  - [ ] 1.2 Write property test for schema enum validation (Property 1)
+  - [x] 1.2 Write property test for schema enum validation (Property 1)
     - **Property 1: Schema enum validation (category and cuisine)**
     - Test that `recipeSchema` accepts valid category values and rejects invalid ones
     - Test that `recipeSchema` accepts valid cuisine values, null, and rejects invalid ones
     - File: `src/domain/models/recipe.pbt.ts` (extend existing)
     - **Validates: Requirements 1.1, 1.2, 1.4, 1.5**
 
-  - [ ] 1.3 Update `PdfRendererPort` interface in `src/domain/ports/pdf-renderer-port.ts`
+  - [x] 1.3 Update `PdfRendererPort` interface in `src/domain/ports/pdf-renderer-port.ts`
     - Define `ImageMode`, `PageSize` types
     - Define `PdfRenderOptions` interface with `imageMode`, `pageSize`, `multiPerPage`, `confidenceMarkers`, `chapterGrouping`
     - Define `ChapterGroup` interface with `chapter` (string) and `recipes` (Recipe[])
     - Update `render()` signature to accept `(chapters: ChapterGroup[], options: PdfRenderOptions, outputPath: string)`
     - _Requirements: 15.1, 15.2_
 
-  - [ ] 1.4 Update `DataStore` port in `src/domain/ports/data-store-port.ts`
+  - [x] 1.4 Update `DataStore` port in `src/domain/ports/data-store-port.ts`
     - Add `getRecipeWithOcr(jobName: string, recipeNumber: string)` or equivalent method needed by BackfillService to retrieve persisted OCR text
     - Add `putRecipe` already exists — verify it handles the new `category`/`cuisine` fields
     - _Requirements: 3.1, 3.2_

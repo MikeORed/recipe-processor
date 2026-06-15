@@ -7,6 +7,8 @@ const validRecipe = {
   title: 'Chocolate Chip Cookies',
   author: 'Grandma',
   year: 1985,
+  category: 'Cookies & Bars' as const,
+  cuisine: 'American' as const,
   tags: ['dessert', 'cookie'],
   ingredients: ['2 cups flour', '1 cup sugar'],
   instructions: ['Mix dry ingredients', 'Bake at 350F'],

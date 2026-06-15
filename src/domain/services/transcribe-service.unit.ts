@@ -106,6 +106,8 @@ function createMockStructureExtractor(overrides: {
         title: `Recipe ${input.recipeNumber}`,
         author: null,
         year: null,
+        category: 'uncategorized' as const,
+        cuisine: null,
         tags: [],
         ingredients: ['ingredient1'],
         instructions: ['step1'],

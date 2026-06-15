@@ -45,6 +45,27 @@ export class DynamoDBAdapter implements DataStore {
     return (response.Items ?? []) as Recipe[];
   }
 
+  async getRecipeWithOcr(
+    jobName: string,
+    recipeNumber: string,
+  ): Promise<{ recipe: Recipe; ocrText: string } | undefined> {
+    const response = await this.docClient.send(
+      new GetCommand({
+        TableName: this.recipesTableName,
+        Key: { jobName, recipeNumber },
+      }),
+    );
+
+    if (!response.Item) {
+      return undefined;
+    }
+
+    const item = response.Item as Recipe & { ocrText?: string };
+    const { ocrText, ...recipe } = item;
+
+    return { recipe: recipe as Recipe, ocrText: ocrText ?? '' };
+  }
+
   async updateJobStatus(jobName: string, status: JobStatus): Promise<void> {
     await this.docClient.send(
       new PutCommand({

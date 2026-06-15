@@ -13,6 +13,8 @@ function makeRecipe(overrides: Partial<Recipe> = {}): Recipe {
     title: 'Chocolate Cake',
     author: 'Grandma',
     year: null,
+    category: 'Cakes',
+    cuisine: null,
     tags: ['dessert', 'cake'],
     ingredients: ['flour', 'sugar', 'cocoa'],
     instructions: ['Mix dry ingredients', 'Add wet ingredients', 'Bake at 350°F'],

@@ -84,6 +84,8 @@ function createMockStructureExtractor(errorRecipeNumbers: Set<string> = new Set(
         title: `Recipe ${input.recipeNumber}`,
         author: null,
         year: null,
+        category: 'uncategorized' as const,
+        cuisine: null,
         tags: [],
         ingredients: ['ingredient1'],
         instructions: ['step1'],
