@@ -34,8 +34,8 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Add `putRecipe` already exists — verify it handles the new `category`/`cuisine` fields
     - _Requirements: 3.1, 3.2_
 
-- [ ] 2. Augment BedrockAdapter extraction prompt
-  - [ ] 2.1 Update `buildPrompt()` and JSON schema in `src/adapters/outbound/bedrock-adapter.ts`
+- [x] 2. Augment BedrockAdapter extraction prompt
+  - [x] 2.1 Update `buildPrompt()` and JSON schema in `src/adapters/outbound/bedrock-adapter.ts`
     - Add `category` field to `RECIPE_OBJECT_SCHEMA` constrained to 14-item canonical enum (exclude "uncategorized"), required, non-nullable
     - Add `cuisine` field constrained to 15-item cuisine enum, nullable
     - Add classification heuristic text to prompt body with the precedence chain: type exceptions → primary protein → dish structure → fallback
@@ -43,7 +43,7 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Update response validation to use updated `recipeSchema` (which now requires category/cuisine)
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
-  - [ ] 2.2 Write property test for FM response validation (Property 2)
+  - [x] 2.2 Write property test for FM response validation (Property 2)
     - **Property 2: FM response category/cuisine validation**
     - Generate arbitrary invalid category/cuisine values and verify the adapter rejects them
     - File: `src/adapters/outbound/bedrock-adapter.pbt.ts`
