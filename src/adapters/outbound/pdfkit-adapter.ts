@@ -1,9 +1,9 @@
 import { createWriteStream } from 'node:fs';
-import { mkdir, rm } from 'node:fs/promises';
+import { access, copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import PDFDocument from 'pdfkit';
-import { PDFDocument as PDFLibDocument } from 'pdf-lib';
+import { PDFDocument as PDFLibDocument, StandardFonts, rgb } from 'pdf-lib';
 
 import type {
   PdfRendererPort,
@@ -122,6 +122,35 @@ export function formatAttribution(author: string | null, year: number | null): s
   return null;
 }
 
+// ─── Header/Footer Decision Helpers (exported for property testing) ────────────
+
+/** The possible page types tracked during body rendering. */
+export type PageType = 'recipe' | 'divider' | 'appendix';
+
+/**
+ * Pure decision function: should a page header (chapter name + recipe title)
+ * be stamped on a page of the given type?
+ *
+ * - recipe → true (headers show chapter + recipe title)
+ * - divider → false
+ * - appendix → false
+ */
+export function shouldStampHeader(type: PageType): boolean {
+  return type === 'recipe';
+}
+
+/**
+ * Pure decision function: should a page footer (centered page number)
+ * be stamped on a page of the given type?
+ *
+ * - recipe → true
+ * - appendix → true (page numbers but no header)
+ * - divider → false
+ */
+export function shouldStampFooter(type: PageType): boolean {
+  return type === 'recipe' || type === 'appendix';
+}
+
 // ─── Page Assignment Simulation (exported for property testing) ────────────────
 
 export interface PageAssignment {
@@ -162,6 +191,20 @@ export function simulatePageAssignments(
   }
 
   return assignments;
+}
+
+// ─── TOC Page Number Offset ───────────────────────────────────────────────────
+
+/**
+ * Computes the displayed page number for a TOC entry.
+ * Exported as a pure function for property-based testing.
+ *
+ * @param bodyPageIndex - The 0-based page index in the body PDF
+ * @param tocPageCount - The number of TOC pages that precede the body
+ * @returns The 1-based displayed page number in the final merged document
+ */
+export function computeDisplayedPageNumber(bodyPageIndex: number, tocPageCount: number): number {
+  return bodyPageIndex + tocPageCount + 1;
 }
 
 // ─── Internal Types ───────────────────────────────────────────────────────────
@@ -405,36 +448,182 @@ export class PdfKitAdapter implements PdfRendererPort {
    * Renders the table of contents as a separate PDF. Page numbers displayed
    * are offset by the TOC's own page count so they match the final merged document.
    *
-   * @returns The number of TOC pages rendered.
+   * @returns The number of TOC pages rendered (0 if skipped).
    */
   private async renderToc(
-    _entries: RecipePageEntry[],
-    _layout: PageDimensions,
-    _outputPath: string,
+    entries: RecipePageEntry[],
+    layout: PageDimensions,
+    outputPath: string,
   ): Promise<number> {
-    // TODO: Implement in task 8.1
-    // - Calculate how many TOC pages are needed (max 40 entries per page)
-    // - Render chapter headings flush-left, recipe titles indented 18pt
-    // - Add dot leaders between title and page number
-    // - Offset page numbers by TOC page count
-    // - Skip TOC entirely if zero entries
-    return 0;
+    // Req 5.8: Skip TOC entirely if zero recipes
+    if (entries.length === 0) {
+      return 0;
+    }
+
+    // Build grouped TOC lines: chapter headings + recipe titles
+    // Each line is either a chapter heading or a recipe entry
+    const tocLines = this.buildTocLines(entries);
+
+    // Req 5.1: Max 40 entries per page
+    const maxEntriesPerPage = 40;
+    const tocPageCount = Math.ceil(tocLines.length / maxEntriesPerPage);
+
+    // Render the TOC PDF
+    const doc = new PDFDocument({
+      autoFirstPage: false,
+      size: [layout.width, layout.height],
+      margins: {
+        top: layout.marginTop,
+        bottom: layout.marginBottom,
+        left: layout.marginLeft,
+        right: layout.marginRight,
+      },
+    });
+
+    const stream = createWriteStream(outputPath);
+    doc.pipe(stream);
+
+    // Render TOC pages
+    for (let page = 0; page < tocPageCount; page++) {
+      doc.addPage();
+
+      const startIdx = page * maxEntriesPerPage;
+      const endIdx = Math.min(startIdx + maxEntriesPerPage, tocLines.length);
+      const pageLines = tocLines.slice(startIdx, endIdx);
+
+      let y = layout.marginTop;
+
+      for (const line of pageLines) {
+        if (line.type === 'chapter') {
+          // Req 5.2: Chapter headings flush-left
+          doc.font(HEADING_FONT).fontSize(SECTION_HEADING_FONT_SIZE);
+          doc.text(line.text, layout.marginLeft, y, { lineBreak: false });
+          y += SECTION_HEADING_FONT_SIZE * 1.4;
+        } else {
+          // Req 5.2: Recipe titles indented 18pt
+          const indent = 18;
+          const titleX = layout.marginLeft + indent;
+
+          doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE);
+
+          // Req 5.3: Truncate titles > 70 chars with ellipsis
+          const displayTitle = line.text.length > 70
+            ? line.text.slice(0, 67) + '...'
+            : line.text;
+
+          // Req 5.3: Offset page numbers by TOC page count
+          const displayPageNumber = String(computeDisplayedPageNumber(line.pageNumber!, tocPageCount));
+
+          // Measure widths for dot leaders
+          const titleWidth = doc.widthOfString(displayTitle);
+          const pageNumWidth = doc.widthOfString(displayPageNumber);
+          const availableWidth = layout.contentWidth - indent;
+          const dotWidth = doc.widthOfString('.');
+
+          // Calculate space for dot leaders
+          const gapForDots = availableWidth - titleWidth - pageNumWidth - dotWidth * 2;
+          const dotCount = Math.max(0, Math.floor(gapForDots / dotWidth));
+          const dots = '.'.repeat(dotCount);
+
+          // Render: title + dot leaders + page number
+          doc.text(displayTitle, titleX, y, { lineBreak: false, continued: false });
+
+          // Render dots
+          if (dotCount > 0) {
+            const dotsX = titleX + titleWidth + dotWidth;
+            doc.text(dots, dotsX, y, { lineBreak: false, continued: false });
+          }
+
+          // Right-align page number
+          const pageNumX = layout.marginLeft + layout.contentWidth - pageNumWidth;
+          doc.text(displayPageNumber, pageNumX, y, { lineBreak: false, continued: false });
+
+          y += BODY_FONT_SIZE * 1.4;
+        }
+      }
+    }
+
+    doc.end();
+
+    // Wait for write to finish
+    await new Promise<void>((resolve, reject) => {
+      stream.on('finish', resolve);
+      stream.on('error', reject);
+    });
+
+    return tocPageCount;
+  }
+
+  /**
+   * Builds the flat list of TOC lines from recipe page entries.
+   * Groups entries under chapter headings, omitting empty chapters.
+   * Does NOT include recipeNumber values (Req 5.6).
+   */
+  private buildTocLines(
+    entries: RecipePageEntry[],
+  ): Array<{ type: 'chapter'; text: string } | { type: 'recipe'; text: string; pageNumber: number }> {
+    const lines: Array<{ type: 'chapter'; text: string } | { type: 'recipe'; text: string; pageNumber: number }> = [];
+    let currentChapter: string | null = null;
+
+    for (const entry of entries) {
+      // Req 5.7: Omit empty chapters — only emit heading when we have a recipe for it
+      if (entry.chapter !== currentChapter) {
+        currentChapter = entry.chapter;
+        lines.push({ type: 'chapter', text: entry.chapter });
+      }
+      // Req 5.6: No recipeNumber values — only title and page number
+      lines.push({ type: 'recipe', text: entry.title, pageNumber: entry.pageNumber });
+    }
+
+    return lines;
   }
 
   // ─── PDF Merging ──────────────────────────────────────────────────────────
 
   /**
    * Merges toc.pdf + body.pdf into the final output PDF using pdf-lib.
+   * If the TOC file does not exist (0 entries → no TOC rendered), copies
+   * the body PDF directly to the output path.
    */
   private async mergeDocuments(
-    _tocPath: string,
-    _bodyPath: string,
-    _outputPath: string,
+    tocPath: string,
+    bodyPath: string,
+    outputPath: string,
   ): Promise<void> {
-    // TODO: Implement in task 8.2
-    // - Load both PDFs with pdf-lib
-    // - Create new document, copy TOC pages first, then body pages
-    // - Write merged result to outputPath
+    // Check if TOC was produced (file exists)
+    const tocExists = await access(tocPath).then(() => true, () => false);
+
+    if (!tocExists) {
+      // No TOC pages — just copy body to output
+      await copyFile(bodyPath, outputPath);
+      return;
+    }
+
+    // Load both PDFs
+    const [tocBytes, bodyBytes] = await Promise.all([
+      readFile(tocPath),
+      readFile(bodyPath),
+    ]);
+
+    const tocDoc = await PDFLibDocument.load(tocBytes);
+    const bodyDoc = await PDFLibDocument.load(bodyBytes);
+
+    // Create merged document: TOC pages first, then body pages
+    const mergedDoc = await PDFLibDocument.create();
+
+    const tocPages = await mergedDoc.copyPages(tocDoc, tocDoc.getPageIndices());
+    for (const page of tocPages) {
+      mergedDoc.addPage(page);
+    }
+
+    const bodyPages = await mergedDoc.copyPages(bodyDoc, bodyDoc.getPageIndices());
+    for (const page of bodyPages) {
+      mergedDoc.addPage(page);
+    }
+
+    // Save merged PDF with valid cross-reference tables
+    const mergedBytes = await mergedDoc.save();
+    await writeFile(outputPath, mergedBytes);
   }
 
   // ─── Chapter Divider ──────────────────────────────────────────────────────
@@ -632,17 +821,107 @@ export class PdfKitAdapter implements PdfRendererPort {
    * Renders a compact source-grouped listing after all recipe chapters.
    * Groups by distinct source value (alphabetical), with recipes sorted
    * alphabetically within each group.
+   *
+   * Layout: 10pt bold source headings, 9pt body text for recipe titles,
+   * 6pt spacing between entries.
    */
   private renderSourceAppendix(
-    _doc: PDFKit.PDFDocument,
-    _chapters: ChapterGroup[],
-    _layout: PageDimensions,
+    doc: PDFKit.PDFDocument,
+    chapters: ChapterGroup[],
+    layout: PageDimensions,
   ): void {
-    // TODO: Implement in task 8.4
-    // - Group all recipes by source (empty/blank → "Unknown Source")
-    // - Sort groups alphabetically by source name
-    // - Sort recipes within each group alphabetically by title
-    // - Render with compact layout (9pt body, 6pt spacing, 10pt bold headings)
+    // Flatten all recipes from all chapters
+    const allRecipes: Recipe[] = [];
+    for (const chapter of chapters) {
+      for (const recipe of chapter.recipes) {
+        allRecipes.push(recipe);
+      }
+    }
+
+    if (allRecipes.length === 0) return;
+
+    // Group recipes by source (empty/blank → "Unknown Source")
+    const sourceMap = new Map<string, Recipe[]>();
+    for (const recipe of allRecipes) {
+      const rawSource = recipe.source.trim();
+      const source = rawSource === '' ? 'Unknown Source' : rawSource;
+      const existing = sourceMap.get(source);
+      if (existing) {
+        existing.push(recipe);
+      } else {
+        sourceMap.set(source, [recipe]);
+      }
+    }
+
+    // Build sorted groups: alphabetical by source name, recipes alphabetical by title
+    const groups: Array<{ source: string; recipes: Recipe[] }> = [];
+    for (const [source, groupRecipes] of sourceMap) {
+      groupRecipes.sort((a, b) =>
+        a.title.toLowerCase().localeCompare(b.title.toLowerCase()),
+      );
+      groups.push({ source, recipes: groupRecipes });
+    }
+    groups.sort((a, b) =>
+      a.source.toLowerCase().localeCompare(b.source.toLowerCase()),
+    );
+
+    // Constants for compact layout
+    const SOURCE_HEADING_FONT_SIZE = 10;
+    const APPENDIX_BODY_FONT_SIZE = 9;
+    const APPENDIX_ITEM_SPACING = 6;
+    const APPENDIX_TITLE_FONT_SIZE = 18;
+
+    // Start a new page for the appendix
+    doc.addPage();
+
+    // Render "Sources" as a section title at the top
+    doc.font(HEADING_FONT).fontSize(APPENDIX_TITLE_FONT_SIZE);
+    doc.text('Sources', layout.marginLeft, layout.marginTop, {
+      width: layout.contentWidth,
+    });
+    doc.y += 12; // Space after title
+
+    // Render each source group
+    for (const group of groups) {
+      // Check if source heading fits on current page
+      doc.font(HEADING_FONT).fontSize(SOURCE_HEADING_FONT_SIZE);
+      const headingHeight = doc.heightOfString(group.source, { width: layout.contentWidth });
+      const remaining = layout.height - layout.marginBottom - doc.y;
+
+      if (remaining < headingHeight + APPENDIX_BODY_FONT_SIZE * 1.5) {
+        // Not enough space for heading + at least one recipe title
+        doc.addPage();
+      }
+
+      // Render source heading (10pt bold)
+      doc.font(HEADING_FONT).fontSize(SOURCE_HEADING_FONT_SIZE);
+      doc.text(group.source, layout.marginLeft, doc.y, { width: layout.contentWidth });
+      doc.y += APPENDIX_ITEM_SPACING;
+
+      // Render recipe titles (9pt body text, 6pt spacing)
+      doc.font(BODY_FONT).fontSize(APPENDIX_BODY_FONT_SIZE);
+      for (let i = 0; i < group.recipes.length; i++) {
+        const title = group.recipes[i].title;
+
+        // Check overflow before rendering
+        const titleHeight = doc.heightOfString(title, { width: layout.contentWidth });
+        const spaceLeft = layout.height - layout.marginBottom - doc.y;
+
+        if (spaceLeft < titleHeight) {
+          doc.addPage();
+          doc.font(BODY_FONT).fontSize(APPENDIX_BODY_FONT_SIZE);
+        }
+
+        doc.text(title, layout.marginLeft, doc.y, { width: layout.contentWidth });
+
+        if (i < group.recipes.length - 1) {
+          doc.y += APPENDIX_ITEM_SPACING;
+        }
+      }
+
+      // Space between source groups
+      doc.y += APPENDIX_ITEM_SPACING * 2;
+    }
   }
 
   // ─── Height Estimation ────────────────────────────────────────────────────
@@ -730,19 +1009,96 @@ export class PdfKitAdapter implements PdfRendererPort {
    * Retroactively stamps page headers (chapter name + recipe title) and
    * footers (centered page number) on recipe content pages of the final PDF.
    * TOC and chapter divider pages receive no headers or footers.
+   * Appendix pages receive page numbers but no header text.
+   *
+   * Reqs: 12.1, 12.2, 12.3, 12.4, 12.5, 10.4
    */
   private async stampHeaders(
-    _outputPath: string,
-    _pageOwnership: PageOwnership[],
-    _tocPageCount: number,
-    _layout: PageDimensions,
+    outputPath: string,
+    pageOwnership: PageOwnership[],
+    tocPageCount: number,
+    layout: PageDimensions,
   ): Promise<void> {
-    // TODO: Implement in task 8.5
-    // - Read the merged PDF with pdf-lib
-    // - For each recipe content page, draw header text and page number footer
-    // - Truncate header elements > 50 chars with ellipsis
-    // - Use 8pt font, 0.4 grayscale for footers
-    // - Skip TOC pages and chapter divider pages
-    // - Write updated PDF back
+    const pdfBytes = await readFile(outputPath);
+    const pdfDoc = await PDFLibDocument.load(pdfBytes);
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    const pages = pdfDoc.getPages();
+    const fontSize = 8;
+    const footerColor = rgb(0.4, 0.4, 0.4);
+
+    // Header Y position: in the top margin, above content area
+    const headerY = layout.height - layout.marginTop + 20;
+    // Footer Y position: in the bottom margin, below content area
+    const footerY = layout.marginBottom - 20;
+
+    for (let i = 0; i < pageOwnership.length; i++) {
+      const ownership = pageOwnership[i];
+
+      // Skip divider pages (no headers or footers) — Req 12.2
+      if (ownership.type === 'divider') {
+        continue;
+      }
+
+      // Calculate actual page index in the merged PDF (TOC pages come first)
+      const mergedPageIndex = tocPageCount + ownership.pageIndex;
+      if (mergedPageIndex >= pages.length) continue;
+
+      const page = pages[mergedPageIndex];
+
+      // Page number: 1-based starting from first body page — Req 12.3, 10.4
+      const pageNumber = ownership.pageIndex + 1;
+
+      // Stamp header only on recipe pages (not appendix) — Req 12.1
+      if (ownership.type === 'recipe') {
+        // Truncate header elements > 50 chars with ellipsis — Req 12.4
+        const chapterText = this.truncateHeaderText(ownership.chapter, 50);
+        const recipeTitleText = this.truncateHeaderText(ownership.recipeTitle, 50);
+
+        // Left-aligned chapter name
+        page.drawText(chapterText, {
+          x: layout.marginLeft,
+          y: headerY,
+          size: fontSize,
+          font,
+          color: footerColor,
+        });
+
+        // Right-aligned recipe title
+        const titleWidth = font.widthOfTextAtSize(recipeTitleText, fontSize);
+        page.drawText(recipeTitleText, {
+          x: layout.width - layout.marginRight - titleWidth,
+          y: headerY,
+          size: fontSize,
+          font,
+          color: footerColor,
+        });
+      }
+
+      // Stamp centered page number in footer — Req 10.4, 12.3
+      const pageNumText = String(pageNumber);
+      const pageNumWidth = font.widthOfTextAtSize(pageNumText, fontSize);
+      const centerX = (layout.width - pageNumWidth) / 2;
+
+      page.drawText(pageNumText, {
+        x: centerX,
+        y: footerY,
+        size: fontSize,
+        font,
+        color: footerColor,
+      });
+    }
+
+    // Write updated PDF back
+    const updatedBytes = await pdfDoc.save();
+    await writeFile(outputPath, updatedBytes);
+  }
+
+  /**
+   * Truncates text to maxLength characters with ellipsis if it exceeds the limit.
+   */
+  private truncateHeaderText(text: string, maxLength: number): string {
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength - 3) + '...';
   }
 }

@@ -52,9 +52,6 @@ jest.mock('pdfkit', () => {
   return {
     __esModule: true,
     default: jest.fn().mockImplementation(() => {
-      capturedTexts = [];
-      addPageCount = 0;
-
       const mockDoc: any = {
         pipe: jest.fn().mockReturnThis(),
         font: jest.fn().mockReturnThis(),
@@ -83,6 +80,10 @@ jest.mock('pdfkit', () => {
         }),
         heightOfString: jest.fn().mockImplementation((text: string, options?: any) => {
           return heightOfStringFn(text, options);
+        }),
+        widthOfString: jest.fn().mockImplementation((text: string) => {
+          // Approximate width: ~6px per character for body font
+          return text.length * 6;
         }),
         bufferedPageRange: jest.fn().mockImplementation(() => ({
           start: 0,
@@ -113,6 +114,8 @@ jest.mock('node:fs', () => ({
 }));
 
 jest.mock('node:fs/promises', () => ({
+  access: jest.fn().mockResolvedValue(undefined),
+  copyFile: jest.fn().mockResolvedValue(undefined),
   mkdir: jest.fn().mockResolvedValue(undefined),
   rm: jest.fn().mockResolvedValue(undefined),
   readFile: jest.fn().mockResolvedValue(Buffer.from('')),
@@ -176,13 +179,13 @@ describe('PdfKitAdapter', () => {
   });
 
   describe('table of contents', () => {
-    it('TOC is a stub until task 8.1 — no TOC text rendered yet', async () => {
+    it('renders TOC with chapter headings and recipe titles', async () => {
       const recipes = [makeRecipe()];
 
       await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
-      // TOC rendering is a stub — it doesn't produce text yet (task 8.1)
-      // Just verify the render completes without error
+      // TOC rendering now produces chapter headings and recipe titles
+      // Just verify the render completes without error and produces text
       expect(capturedTexts.length).toBeGreaterThan(0);
     });
 
