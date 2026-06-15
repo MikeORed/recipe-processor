@@ -123,8 +123,8 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - File: `src/domain/services/export-service.pbt.ts`
     - **Validates: Requirements 11.5**
 
-- [ ] 6. Rewrite PdfKitAdapter — body rendering with chapter dividers and recipe formatting
-  - [~] 6.1 Scaffold the new `PdfKitAdapter` structure in `src/adapters/outbound/pdfkit-adapter.ts`
+- [x] 6. Rewrite PdfKitAdapter — body rendering with chapter dividers and recipe formatting
+  - [x] 6.1 Scaffold the new `PdfKitAdapter` structure in `src/adapters/outbound/pdfkit-adapter.ts`
     - Update class to implement the new `PdfRendererPort` signature
     - Add `render()` orchestrating Body_TOC_Merge pipeline
     - Add helper method stubs: `renderBody()`, `renderToc()`, `mergeDocuments()`, `renderChapterDivider()`, `renderRecipe()`, `renderSourceAppendix()`, `estimateRecipeHeight()`, `stampHeaders()`
@@ -132,7 +132,7 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Define typography scale constants
     - _Requirements: 10.1, 10.2, 10.3, 10.5, 15.1, 15.2_
 
-  - [~] 6.2 Implement `renderBody()` — chapter dividers and recipe pages
+  - [x] 6.2 Implement `renderBody()` — chapter dividers and recipe pages
     - Render chapter divider pages (28pt Helvetica-Bold, centered horizontally and vertically)
     - Render recipe pages with: title (18pt bold), decorative rule under title, attribution line, source line, sections (Ingredients, Instructions, Notes)
     - Track page positions for each recipe during rendering (for TOC)
@@ -141,38 +141,38 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Enforce cross-chapter page isolation (no same-page recipes from different chapters)
     - _Requirements: 6.1, 6.2, 8.1, 8.2, 8.3, 8.4, 10.5, 10.6, 13.1, 13.2_
 
-  - [~] 6.3 Implement attribution and source rendering in `renderRecipe()`
+  - [x] 6.3 Implement attribution and source rendering in `renderRecipe()`
     - Format attribution: "By [author], [year]" | "By [author]" | "[year]" | none
     - Render in 10pt Times-Italic between title and source line
     - Handle long author names (natural wrap within margins)
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-  - [~] 6.4 Write property test for attribution format (Property 3)
+  - [x] 6.4 Write property test for attribution format (Property 3)
     - **Property 3: Attribution format correctness**
     - Generate arbitrary author/year combinations and verify format
     - File: `src/adapters/outbound/pdfkit-adapter.pbt.ts`
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
 
-  - [~] 6.5 Implement overflow pagination with continuation headers
+  - [x] 6.5 Implement overflow pagination with continuation headers
     - Use `doc.heightOfString()` to measure each content block before rendering
     - If block exceeds remaining space, trigger manual page break
     - Render continuation header "[Recipe Title], continued" at top of new page
     - Skip continuation header if recipe fits on one page
     - _Requirements: 9.1, 9.2, 9.3_
 
-  - [~] 6.6 Write property test for continuation header format (Property 9)
+  - [x] 6.6 Write property test for continuation header format (Property 9)
     - **Property 9: Continuation header format**
     - Verify any title string produces exactly "[title], continued"
     - File: `src/adapters/outbound/pdfkit-adapter.pbt.ts`
     - **Validates: Requirements 9.2**
 
-  - [~] 6.7 Write property test for multi-per-page fit decision (Property 7)
+  - [x] 6.7 Write property test for multi-per-page fit decision (Property 7)
     - **Property 7: Multi-per-page fit decision**
     - Verify that given remaining space R and height H, same-page iff R >= H + 24.5
     - File: `src/adapters/outbound/pdfkit-adapter.pbt.ts`
     - **Validates: Requirements 8.1, 8.2**
 
-  - [~] 6.8 Write property test for cross-chapter page isolation (Property 8)
+  - [x] 6.8 Write property test for cross-chapter page isolation (Property 8)
     - **Property 8: Cross-chapter page isolation**
     - Verify no page contains recipes from different chapters
     - File: `src/adapters/outbound/pdfkit-adapter.pbt.ts`
