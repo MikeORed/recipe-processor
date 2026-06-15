@@ -107,6 +107,7 @@ function createMockDataStore(): DataStore & { storedRecipes: Recipe[]; statusUpd
     async getRecipesByJob(jobName: string) { return storedRecipes.filter((r) => r.jobName === jobName); },
     async updateJobStatus(jobName: string, status: JobStatus) { statusUpdates.push({ jobName, status }); },
     async getJobStatus() { return undefined; },
+    async getRecipeWithOcr() { return undefined; },
   };
 }
 

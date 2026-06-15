@@ -1,7 +1,16 @@
 import type { DataStore } from '../ports/data-store-port.js';
-import type { PdfRendererPort } from '../ports/pdf-renderer-port.js';
+import type { PdfRendererPort, ChapterGroup, PdfRenderOptions } from '../ports/pdf-renderer-port.js';
 import type { MarkdownRendererPort } from '../ports/markdown-renderer-port.js';
 import { HeirloomError } from '../../shared/errors.js';
+
+/** Default PdfRenderOptions used when the caller does not supply them. */
+const DEFAULT_PDF_OPTIONS: PdfRenderOptions = {
+  imageMode: 'thumbnail',
+  pageSize: 'letter',
+  multiPerPage: true,
+  confidenceMarkers: true,
+  chapterGrouping: true,
+};
 
 export type ExportFormat = 'pdf' | 'obsidian';
 
@@ -50,7 +59,10 @@ export class ExportService {
 
     // Delegate to the appropriate renderer
     if (format === 'pdf') {
-      await this.pdfRenderer.render(recipes, outputPath);
+      // Wrap all recipes into a single chapter group for now.
+      // Task 5 will implement proper chapter grouping by category.
+      const chapters: ChapterGroup[] = [{ chapter: 'All Recipes', recipes }];
+      await this.pdfRenderer.render(chapters, DEFAULT_PDF_OPTIONS, outputPath);
     } else {
       await this.markdownRenderer.renderVault(recipes, outputPath);
     }

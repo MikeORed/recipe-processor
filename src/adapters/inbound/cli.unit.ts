@@ -1,6 +1,6 @@
 import { runCli, printHelp } from './cli.js';
 
-const KNOWN_COMMANDS = ['init', 'ingest', 'transcribe', 'export', 'jobs', 'use'] as const;
+const KNOWN_COMMANDS = ['init', 'ingest', 'transcribe', 'export', 'jobs', 'use', 'backfill'] as const;
 
 // Mock the real handler modules so CLI routing tests stay isolated from
 // filesystem-dependent implementations.
@@ -32,6 +32,11 @@ jest.mock('./transcribe-handler.js', () => ({
 jest.mock('./export-handler.js', () => ({
   exportHandler: jest.fn(async () => {
     console.log('export handler called');
+  }),
+}));
+jest.mock('./backfill-handler.js', () => ({
+  backfillHandler: jest.fn(async () => {
+    console.log('backfill handler called');
   }),
 }));
 
@@ -109,7 +114,7 @@ describe('CLI command routing', () => {
   });
 
   describe('printHelp', () => {
-    it('lists all six commands', () => {
+    it('lists all commands', () => {
       printHelp();
 
       const output = stdoutSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');

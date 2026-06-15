@@ -1,9 +1,24 @@
 import { PdfKitAdapter } from './pdfkit-adapter.js';
 import type { Recipe } from '../../domain/models/recipe.js';
+import type { ChapterGroup, PdfRenderOptions } from '../../domain/ports/pdf-renderer-port.js';
 import { readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
+
+/** Default options for test renders. */
+const defaultOptions: PdfRenderOptions = {
+  imageMode: 'thumbnail',
+  pageSize: 'letter',
+  multiPerPage: true,
+  confidenceMarkers: true,
+  chapterGrouping: true,
+};
+
+/** Wraps recipes into a single ChapterGroup for testing. */
+function toChapters(recipes: Recipe[]): ChapterGroup[] {
+  return [{ chapter: 'All Recipes', recipes }];
+}
 
 /**
  * Creates a minimal Recipe object for testing.
@@ -95,7 +110,7 @@ describe('PdfKitAdapter', () => {
     const { mkdir } = await import('node:fs/promises');
     const recipes = [makeRecipe()];
 
-    await adapter.render(recipes, '/some/path/output/cookbook.pdf');
+    await adapter.render(toChapters(recipes), defaultOptions, '/some/path/output/cookbook.pdf');
 
     expect(mkdir).toHaveBeenCalledWith('/some/path/output', { recursive: true });
   });
@@ -103,7 +118,7 @@ describe('PdfKitAdapter', () => {
   it('completes without error for valid recipes', async () => {
     const recipes = [makeRecipe()];
 
-    await expect(adapter.render(recipes, '/tmp/test.pdf')).resolves.toBeUndefined();
+    await expect(adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf')).resolves.toBeUndefined();
   });
 
   it('adds a page for each recipe', async () => {
@@ -113,7 +128,7 @@ describe('PdfKitAdapter', () => {
       makeRecipe({ recipeNumber: '003', title: 'Banana Bread' }),
     ];
 
-    await adapter.render(recipes, '/tmp/test.pdf');
+    await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
     expect(addPageCount).toBe(3);
   });
@@ -122,7 +137,7 @@ describe('PdfKitAdapter', () => {
     it('includes "Table of Contents" heading', async () => {
       const recipes = [makeRecipe()];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       expect(capturedTexts).toContain('Table of Contents');
     });
@@ -133,7 +148,7 @@ describe('PdfKitAdapter', () => {
         makeRecipe({ recipeNumber: '002', title: 'Apple Pie' }),
       ];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       expect(capturedTexts).toContain('001. Chocolate Cake');
       expect(capturedTexts).toContain('002. Apple Pie');
@@ -144,7 +159,7 @@ describe('PdfKitAdapter', () => {
     it('includes recipe number and title in each section', async () => {
       const recipes = [makeRecipe({ recipeNumber: '042', title: 'Test Recipe' })];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       expect(capturedTexts).toContain('042. Test Recipe');
     });
@@ -152,7 +167,7 @@ describe('PdfKitAdapter', () => {
     it('includes source when present', async () => {
       const recipes = [makeRecipe({ source: 'Family Cookbook' })];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       expect(capturedTexts).toContain('Source: Family Cookbook');
     });
@@ -160,7 +175,7 @@ describe('PdfKitAdapter', () => {
     it('includes all ingredients', async () => {
       const recipes = [makeRecipe({ ingredients: ['butter', 'eggs', 'vanilla'] })];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       expect(capturedTexts).toContain('  • butter');
       expect(capturedTexts).toContain('  • eggs');
@@ -170,7 +185,7 @@ describe('PdfKitAdapter', () => {
     it('includes all instructions with numbering', async () => {
       const recipes = [makeRecipe({ instructions: ['Cream the butter', 'Add eggs'] })];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       expect(capturedTexts).toContain('  1. Cream the butter');
       expect(capturedTexts).toContain('  2. Add eggs');
@@ -179,7 +194,7 @@ describe('PdfKitAdapter', () => {
     it('includes notes when present', async () => {
       const recipes = [makeRecipe({ notes: ['Refrigerate overnight'] })];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       expect(capturedTexts).toContain('  • Refrigerate overnight');
     });
@@ -187,7 +202,7 @@ describe('PdfKitAdapter', () => {
     it('includes image key references', async () => {
       const recipes = [makeRecipe({ imageKeys: ['test-job/photo1.jpg', 'test-job/photo2.jpg'] })];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       const imageText = capturedTexts.find((t) => t.includes('test-job/photo1.jpg'));
       expect(imageText).toBeDefined();
@@ -197,7 +212,7 @@ describe('PdfKitAdapter', () => {
     it('does not include source line when source is empty', async () => {
       const recipes = [makeRecipe({ source: '' })];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       const sourceTexts = capturedTexts.filter((t) => t.startsWith('Source:'));
       expect(sourceTexts).toHaveLength(0);
@@ -206,7 +221,7 @@ describe('PdfKitAdapter', () => {
     it('does not include notes section when notes is empty', async () => {
       const recipes = [makeRecipe({ notes: [] })];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       const notesHeaders = capturedTexts.filter((t) => t.startsWith('Notes'));
       expect(notesHeaders).toHaveLength(0);
@@ -219,7 +234,7 @@ describe('PdfKitAdapter', () => {
         makeRecipe({ confidence: { title: 0.5, ingredients: 0.9, instructions: 0.9, notes: 0.9 } }),
       ];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       const titleText = capturedTexts.find((t) => t.includes('Chocolate Cake') && t.includes('⚠️'));
       expect(titleText).toBeDefined();
@@ -230,7 +245,7 @@ describe('PdfKitAdapter', () => {
         makeRecipe({ confidence: { title: 0.9, ingredients: 0.3, instructions: 0.9, notes: 0.9 } }),
       ];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       const ingredientsHeader = capturedTexts.find(
         (t) => t.includes('Ingredients') && t.includes('⚠️'),
@@ -243,7 +258,7 @@ describe('PdfKitAdapter', () => {
         makeRecipe({ confidence: { title: 0.9, ingredients: 0.9, instructions: 0.4, notes: 0.9 } }),
       ];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       const instructionsHeader = capturedTexts.find(
         (t) => t.includes('Instructions') && t.includes('⚠️'),
@@ -256,7 +271,7 @@ describe('PdfKitAdapter', () => {
         makeRecipe({ confidence: { title: 0.9, ingredients: 0.9, instructions: 0.9, notes: 0.1 } }),
       ];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       const notesHeader = capturedTexts.find((t) => t.includes('Notes') && t.includes('⚠️'));
       expect(notesHeader).toBeDefined();
@@ -267,7 +282,7 @@ describe('PdfKitAdapter', () => {
         makeRecipe({ confidence: { title: 0.9, ingredients: 0.9, instructions: 0.9, notes: 0.9 } }),
       ];
 
-      await adapter.render(recipes, '/tmp/test.pdf');
+      await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
       const markedTexts = capturedTexts.filter((t) => t.includes('⚠️'));
       expect(markedTexts).toHaveLength(0);

@@ -153,6 +153,10 @@ function createMockDataStore(overrides: {
       calls.push({ method: 'getJobStatus', args: [jobName] });
       return jobStatuses[jobName];
     },
+    async getRecipeWithOcr(jobName: string, recipeNumber: string) {
+      calls.push({ method: 'getRecipeWithOcr', args: [jobName, recipeNumber] });
+      return undefined;
+    },
   };
 }
 

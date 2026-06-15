@@ -1,6 +1,6 @@
 import { ExportService } from './export-service.js';
 import type { DataStore } from '../ports/data-store-port.js';
-import type { PdfRendererPort } from '../ports/pdf-renderer-port.js';
+import type { PdfRendererPort, ChapterGroup, PdfRenderOptions } from '../ports/pdf-renderer-port.js';
 import type { MarkdownRendererPort } from '../ports/markdown-renderer-port.js';
 import type { Recipe } from '../models/recipe.js';
 import type { JobStatus } from '../models/job.js';
@@ -56,11 +56,16 @@ function createMocks(overrides: {
     async updateJobStatus(jobName: string, status: JobStatus): Promise<void> {
       calls.push({ method: 'updateJobStatus', args: [jobName, status] });
     },
+    async getRecipeWithOcr(_jobName: string, _recipeNumber: string) {
+      calls.push({ method: 'getRecipeWithOcr', args: [_jobName, _recipeNumber] });
+      return undefined;
+    },
   };
 
   let pdfRenderArgs: { recipes: Recipe[]; outputPath: string } | undefined;
   const pdfRenderer: PdfRendererPort = {
-    async render(recipes: Recipe[], outputPath: string): Promise<void> {
+    async render(chapters: ChapterGroup[], _options: PdfRenderOptions, outputPath: string): Promise<void> {
+      const recipes = chapters.flatMap((ch) => ch.recipes);
       calls.push({ method: 'pdfRenderer.render', args: [recipes, outputPath] });
       pdfRenderArgs = { recipes, outputPath };
     },

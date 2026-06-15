@@ -3,7 +3,11 @@ import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import PDFDocument from 'pdfkit';
 
-import type { PdfRendererPort } from '../../domain/ports/pdf-renderer-port.js';
+import type {
+  PdfRendererPort,
+  ChapterGroup,
+  PdfRenderOptions,
+} from '../../domain/ports/pdf-renderer-port.js';
 import type { Recipe } from '../../domain/models/recipe.js';
 
 /** Confidence threshold below which a field is flagged for review. */
@@ -16,7 +20,14 @@ const LOW_CONFIDENCE_THRESHOLD = 0.7;
  * sections, review markers for low-confidence fields, and image key references.
  */
 export class PdfKitAdapter implements PdfRendererPort {
-  async render(recipes: Recipe[], outputPath: string): Promise<void> {
+  async render(
+    chapters: ChapterGroup[],
+    _options: PdfRenderOptions,
+    outputPath: string,
+  ): Promise<void> {
+    // Flatten chapters into a recipe list for the current (legacy) rendering pass.
+    // Tasks 6+ will rewrite this to use chapter-aware rendering.
+    const recipes: Recipe[] = chapters.flatMap((ch) => ch.recipes);
     // Ensure the output directory exists
     await mkdir(dirname(outputPath), { recursive: true });
 
