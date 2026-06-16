@@ -260,15 +260,15 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
 - [x] 11. Checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Integration wiring and final validation
-  - [ ] 12.1 Wire updated ExportService to PdfKitAdapter in ExportHandler
+- [x] 12. Integration wiring and final validation
+  - [x] 12.1 Wire updated ExportService to PdfKitAdapter in ExportHandler
     - Update adapter instantiation in ExportHandler to pass image-preprocessed data
     - Integrate image pre-processing step in ExportService before calling `pdfRenderer.render()`
     - Ensure `ExportService.export()` calls image processor when `imageMode !== 'none'`
     - Verify end-to-end flow: CLI → ExportHandler → ExportService (grouping + image prep) → PdfKitAdapter (Body_TOC_Merge)
     - _Requirements: 15.3, 15.4_
 
-  - [ ] 12.2 Write integration test for full PDF render pipeline
+  - [x] 12.2 Write integration test for full PDF render pipeline
     - Verify Body_TOC_Merge produces valid PDF with correct page count
     - Verify TOC page numbers match actual recipe positions
     - Verify chapter divider pages present for non-empty categories
@@ -276,14 +276,14 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - File: `test/pdf-export.test.ts`
     - _Requirements: 5.4, 6.1, 8.1_
 
-  - [ ] 12.3 Write integration test for backfill pipeline
+  - [x] 12.3 Write integration test for backfill pipeline
     - Mock Bedrock responses, verify all recipes processed
     - Verify DynamoDB records updated with category/cuisine
     - Verify partial failure handling
     - File: `test/backfill.test.ts`
     - _Requirements: 3.1, 3.4, 3.5_
 
-- [ ] 13. Final checkpoint — Ensure all tests pass
+- [x] 13. Final checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

@@ -782,7 +782,9 @@ export class PdfKitAdapter implements PdfRendererPort {
       if (options.imageMode === 'thumbnail') {
         // Thumbnail mode: embed inline at max 300px width, preserving aspect ratio
         for (const imageKey of recipe.imageKeys) {
-          const imagePath = resolveImageKeyPath(imageKey, recipe.jobName);
+          // Use preprocessed image path if available, otherwise fall back to original
+          const imagePath = options.processedImageMap?.get(imageKey)
+            ?? resolveImageKeyPath(imageKey, recipe.jobName);
 
           if (existsSync(imagePath)) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -814,7 +816,9 @@ export class PdfKitAdapter implements PdfRendererPort {
       } else if (options.imageMode === 'full') {
         // Full mode: embed on separate page at max 975px width, preserving aspect ratio
         for (const imageKey of recipe.imageKeys) {
-          const imagePath = resolveImageKeyPath(imageKey, recipe.jobName);
+          // Use preprocessed image path if available, otherwise fall back to original
+          const imagePath = options.processedImageMap?.get(imageKey)
+            ?? resolveImageKeyPath(imageKey, recipe.jobName);
 
           doc.addPage();
 

@@ -9,6 +9,12 @@ export interface PdfRenderOptions {
   multiPerPage: boolean;
   confidenceMarkers: boolean;
   chapterGrouping: boolean;
+  /**
+   * Map of imageKey → local file path for pre-processed (downsampled) images.
+   * When present, the renderer uses these paths instead of resolving originals.
+   * Populated by ExportService during the image pre-processing phase.
+   */
+  processedImageMap?: Map<string, string>;
 }
 
 export interface ChapterGroup {

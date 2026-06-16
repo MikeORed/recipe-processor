@@ -3,6 +3,7 @@ import type { PdfRendererPort, ChapterGroup, PdfRenderOptions } from '../ports/p
 import type { MarkdownRendererPort } from '../ports/markdown-renderer-port.js';
 import type { Recipe } from '../models/recipe.js';
 import { HeirloomError } from '../../shared/errors.js';
+import { preprocessImages } from './image-processor.js';
 
 /**
  * Canonical category order for chapter grouping.
@@ -33,6 +34,15 @@ const DEFAULT_PDF_OPTIONS: PdfRenderOptions = {
   confidenceMarkers: true,
   chapterGrouping: true,
 };
+
+/** Image pre-processing target width (px) for thumbnail mode (150 DPI × 2 inches). */
+const IMAGE_TARGET_WIDTH_THUMBNAIL = 300;
+
+/** Image pre-processing target width (px) for full mode (150 DPI × 6.5 inches). */
+const IMAGE_TARGET_WIDTH_FULL = 975;
+
+/** Target DPI for downsampled images. */
+const IMAGE_TARGET_DPI = 150;
 
 export type ExportFormat = 'pdf' | 'obsidian';
 
@@ -180,6 +190,42 @@ export class ExportService {
           a.title.toLowerCase().localeCompare(b.title.toLowerCase()),
         );
         chapters = [{ chapter: 'All Recipes', recipes: sorted }];
+      }
+
+      // Image pre-processing: downsample before render when imageMode !== 'none'
+      if (options.imageMode !== 'none') {
+        const targetWidthPx = options.imageMode === 'thumbnail'
+          ? IMAGE_TARGET_WIDTH_THUMBNAIL
+          : IMAGE_TARGET_WIDTH_FULL;
+
+        // Collect all unique imageKeys from all recipes
+        const allImageKeys: string[] = [];
+        for (const chapter of chapters) {
+          for (const recipe of chapter.recipes) {
+            for (const key of recipe.imageKeys) {
+              if (!allImageKeys.includes(key)) {
+                allImageKeys.push(key);
+              }
+            }
+          }
+        }
+
+        if (allImageKeys.length > 0) {
+          const processedImages = await preprocessImages(
+            allImageKeys,
+            jobName,
+            targetWidthPx,
+            IMAGE_TARGET_DPI,
+          );
+
+          // Build a map of imageKey → preprocessed local file path
+          const processedImageMap = new Map<string, string>();
+          for (const img of processedImages) {
+            processedImageMap.set(img.originalKey, img.localPath);
+          }
+
+          options = { ...options, processedImageMap };
+        }
       }
 
       await this.pdfRenderer.render(chapters, options, outputPath);
