@@ -1,4 +1,4 @@
-import { createWriteStream } from 'node:fs';
+import { createWriteStream, existsSync } from 'node:fs';
 import { access, copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -12,6 +12,7 @@ import type {
   PageSize,
 } from '../../domain/ports/pdf-renderer-port.js';
 import type { Recipe } from '../../domain/models/recipe.js';
+import { resolveImageKeyPath } from '../../domain/services/image-processor.js';
 
 // ─── Page Layout Constants ────────────────────────────────────────────────────
 
@@ -76,6 +77,12 @@ export const SPACE_AFTER_LAST_CONTENT = 4;
 
 /** Separator: 12pt above + 0.5pt rule + 12pt below = 24.5pt total */
 export const SEPARATOR_OVERHEAD = 24.5;
+
+// ─── Image Embedding Constants ────────────────────────────────────────────────
+
+export const THUMBNAIL_MAX_WIDTH = 300;
+export const FULL_IMAGE_MAX_WIDTH = 975;
+const IMAGE_PLACEHOLDER_TEXT = 'Source image not available';
 
 // ─── Confidence Threshold ─────────────────────────────────────────────────────
 
@@ -770,13 +777,64 @@ export class PdfKitAdapter implements PdfRendererPort {
     // --- Space after last content ---
     doc.y += SPACE_AFTER_LAST_CONTENT;
 
-    // --- Image key references (8pt Helvetica, 0.4 grayscale) ---
+    // --- Image embedding based on imageMode ---
     if (options.imageMode !== 'none' && recipe.imageKeys.length > 0) {
-      doc.font(FOOTER_FONT).fontSize(FOOTER_FONT_SIZE);
-      doc.fillColor('gray');
-      const imageRefText = `Images: ${recipe.imageKeys.join(', ')}`;
-      doc.text(imageRefText, layout.marginLeft, doc.y, { width: layout.contentWidth });
-      doc.fillColor('black');
+      if (options.imageMode === 'thumbnail') {
+        // Thumbnail mode: embed inline at max 300px width, preserving aspect ratio
+        for (const imageKey of recipe.imageKeys) {
+          const imagePath = resolveImageKeyPath(imageKey, recipe.jobName);
+
+          if (existsSync(imagePath)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const img = (doc as any).openImage(imagePath);
+            const renderedWidth = Math.min(img.width, THUMBNAIL_MAX_WIDTH);
+            const renderedHeight = (img.height / img.width) * renderedWidth;
+
+            // Check if image fits on current page, otherwise add page with continuation header
+            const remaining = layout.height - layout.marginBottom - doc.y;
+            if (remaining < renderedHeight) {
+              doc.addPage();
+              doc.font(HEADING_FONT).fontSize(RECIPE_TITLE_FONT_SIZE);
+              doc.text(formatContinuationHeader(currentRecipeTitle), layout.marginLeft, layout.marginTop, {
+                width: layout.contentWidth,
+              });
+              doc.y += 8;
+            }
+
+            doc.image(img, layout.marginLeft, doc.y, { width: renderedWidth });
+            doc.y += renderedHeight + SPACE_BETWEEN_LIST_ITEMS;
+          } else {
+            // Placeholder for missing image
+            doc.font(ITALIC_FONT).fontSize(FOOTER_FONT_SIZE);
+            doc.fillColor('gray');
+            doc.text(IMAGE_PLACEHOLDER_TEXT, layout.marginLeft, doc.y, { width: layout.contentWidth });
+            doc.fillColor('black');
+          }
+        }
+      } else if (options.imageMode === 'full') {
+        // Full mode: embed on separate page at max 975px width, preserving aspect ratio
+        for (const imageKey of recipe.imageKeys) {
+          const imagePath = resolveImageKeyPath(imageKey, recipe.jobName);
+
+          doc.addPage();
+
+          if (existsSync(imagePath)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const img = (doc as any).openImage(imagePath);
+            const renderedWidth = Math.min(img.width, FULL_IMAGE_MAX_WIDTH);
+            const renderedHeight = (img.height / img.width) * renderedWidth;
+
+            doc.image(img, layout.marginLeft, layout.marginTop, { width: renderedWidth });
+            doc.y = layout.marginTop + renderedHeight;
+          } else {
+            // Placeholder for missing image
+            doc.font(ITALIC_FONT).fontSize(FOOTER_FONT_SIZE);
+            doc.fillColor('gray');
+            doc.text(IMAGE_PLACEHOLDER_TEXT, layout.marginLeft, layout.marginTop, { width: layout.contentWidth });
+            doc.fillColor('black');
+          }
+        }
+      }
     }
   }
 
@@ -993,11 +1051,10 @@ export class PdfKitAdapter implements PdfRendererPort {
     // Space after last content
     totalHeight += SPACE_AFTER_LAST_CONTENT;
 
-    // Image references (if applicable)
-    if (options.imageMode !== 'none' && recipe.imageKeys.length > 0) {
-      doc.font(FOOTER_FONT).fontSize(FOOTER_FONT_SIZE);
-      const imageRefText = `Images: ${recipe.imageKeys.join(', ')}`;
-      totalHeight += doc.heightOfString(imageRefText, { width: layout.contentWidth });
+    // Image height estimation (thumbnail mode adds inline images)
+    if (options.imageMode === 'thumbnail' && recipe.imageKeys.length > 0) {
+      // Estimate conservative height per image (assume square at thumbnail width)
+      totalHeight += recipe.imageKeys.length * (THUMBNAIL_MAX_WIDTH + SPACE_BETWEEN_LIST_ITEMS);
     }
 
     return totalHeight;

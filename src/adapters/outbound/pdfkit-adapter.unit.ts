@@ -47,6 +47,8 @@ let capturedTexts: string[] = [];
 let addPageCount: number;
 let mockDocInstance: any = null;
 let heightOfStringFn: (text: string, options?: any) => number = () => 14;
+let imageCalls: Array<{ img: any; x: number; y: number; opts?: any }> = [];
+let openImageFn: (path: string) => { width: number; height: number } = () => ({ width: 600, height: 400 });
 
 jest.mock('pdfkit', () => {
   return {
@@ -85,6 +87,13 @@ jest.mock('pdfkit', () => {
           // Approximate width: ~6px per character for body font
           return text.length * 6;
         }),
+        openImage: jest.fn().mockImplementation((path: string) => {
+          return openImageFn(path);
+        }),
+        image: jest.fn().mockImplementation((img: any, x: number, y: number, opts?: any) => {
+          imageCalls.push({ img, x, y, opts });
+          return mockDoc;
+        }),
         bufferedPageRange: jest.fn().mockImplementation(() => ({
           start: 0,
           count: addPageCount,
@@ -111,6 +120,7 @@ jest.mock('node:fs', () => ({
       return { on: jest.fn() };
     }),
   }),
+  existsSync: jest.fn().mockReturnValue(false),
 }));
 
 jest.mock('node:fs/promises', () => ({
@@ -132,8 +142,17 @@ jest.mock('pdf-lib', () => ({
     load: jest.fn().mockResolvedValue({
       getPageCount: jest.fn().mockReturnValue(0),
       getPageIndices: jest.fn().mockReturnValue([]),
+      getPages: jest.fn().mockReturnValue([]),
+      embedFont: jest.fn().mockResolvedValue({
+        widthOfTextAtSize: jest.fn().mockReturnValue(30),
+      }),
+      save: jest.fn().mockResolvedValue(new Uint8Array()),
     }),
   },
+  StandardFonts: {
+    Helvetica: 'Helvetica',
+  },
+  rgb: jest.fn().mockReturnValue({}),
 }));
 
 describe('PdfKitAdapter', () => {
@@ -145,6 +164,12 @@ describe('PdfKitAdapter', () => {
     addPageCount = 0;
     mockDocInstance = null;
     heightOfStringFn = () => 14;
+    imageCalls = [];
+    openImageFn = () => ({ width: 600, height: 400 });
+
+    // Reset existsSync to default (false)
+    const { existsSync } = jest.requireMock<{ existsSync: jest.Mock }>('node:fs');
+    existsSync.mockReturnValue(false);
   });
 
   it('creates the output directory via mkdir', async () => {
@@ -246,14 +271,14 @@ describe('PdfKitAdapter', () => {
       expect(capturedTexts).toContain('Refrigerate overnight');
     });
 
-    it('includes image key references', async () => {
+    it('renders placeholder text when image files are missing', async () => {
       const recipes = [makeRecipe({ imageKeys: ['test-job/photo1.jpg', 'test-job/photo2.jpg'] })];
 
       await adapter.render(toChapters(recipes), defaultOptions, '/tmp/test.pdf');
 
-      const imageText = capturedTexts.find((t) => t.includes('test-job/photo1.jpg'));
-      expect(imageText).toBeDefined();
-      expect(imageText).toContain('test-job/photo2.jpg');
+      // With existsSync mocked to return false, placeholder text should be rendered
+      const placeholderTexts = capturedTexts.filter((t) => t === 'Source image not available');
+      expect(placeholderTexts).toHaveLength(2);
     });
 
     it('does not include source line when source is empty', async () => {
@@ -531,6 +556,144 @@ describe('PdfKitAdapter', () => {
       // With items returning large heights, overflow should trigger
       const continuationHeaders = capturedTexts.filter((t) => t === 'Multi-Section Recipe, continued');
       expect(continuationHeaders.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('image embedding', () => {
+    it('thumbnail mode: caps width at 300px and preserves aspect ratio', async () => {
+      const { existsSync } = jest.requireMock<{ existsSync: jest.Mock }>('node:fs');
+      existsSync.mockReturnValue(true);
+      openImageFn = () => ({ width: 600, height: 400 });
+
+      const recipes = [makeRecipe({ imageKeys: ['test-job/photo1.jpg'] })];
+      await adapter.render(toChapters(recipes), { ...defaultOptions, imageMode: 'thumbnail' }, '/tmp/test.pdf');
+
+      expect(imageCalls).toHaveLength(1);
+      expect(imageCalls[0].opts).toEqual({ width: 300 });
+    });
+
+    it('thumbnail mode: does not scale up images smaller than 300px', async () => {
+      const { existsSync } = jest.requireMock<{ existsSync: jest.Mock }>('node:fs');
+      existsSync.mockReturnValue(true);
+      openImageFn = () => ({ width: 200, height: 150 });
+
+      const recipes = [makeRecipe({ imageKeys: ['test-job/small.jpg'] })];
+      await adapter.render(toChapters(recipes), { ...defaultOptions, imageMode: 'thumbnail' }, '/tmp/test.pdf');
+
+      expect(imageCalls).toHaveLength(1);
+      expect(imageCalls[0].opts).toEqual({ width: 200 });
+    });
+
+    it('full mode: adds a separate page for each image', async () => {
+      const { existsSync } = jest.requireMock<{ existsSync: jest.Mock }>('node:fs');
+      existsSync.mockReturnValue(true);
+      openImageFn = () => ({ width: 1200, height: 800 });
+
+      const recipes = [makeRecipe({ imageKeys: ['test-job/img1.jpg', 'test-job/img2.jpg'] })];
+      const pagesBefore = addPageCount;
+      await adapter.render(toChapters(recipes), { ...defaultOptions, imageMode: 'full' }, '/tmp/test.pdf');
+
+      // Each image gets its own page
+      expect(imageCalls).toHaveLength(2);
+      // addPage is called for each image (plus other pages for recipe/chapter)
+      expect(addPageCount - pagesBefore).toBeGreaterThanOrEqual(2);
+    });
+
+    it('full mode: caps width at 975px and preserves aspect ratio', async () => {
+      const { existsSync } = jest.requireMock<{ existsSync: jest.Mock }>('node:fs');
+      existsSync.mockReturnValue(true);
+      openImageFn = () => ({ width: 1200, height: 800 });
+
+      const recipes = [makeRecipe({ imageKeys: ['test-job/big.jpg'] })];
+      await adapter.render(toChapters(recipes), { ...defaultOptions, imageMode: 'full' }, '/tmp/test.pdf');
+
+      expect(imageCalls).toHaveLength(1);
+      expect(imageCalls[0].opts).toEqual({ width: 975 });
+    });
+
+    it('none mode: does not render images or placeholders', async () => {
+      const { existsSync } = jest.requireMock<{ existsSync: jest.Mock }>('node:fs');
+      existsSync.mockReturnValue(true);
+      openImageFn = () => ({ width: 600, height: 400 });
+
+      const recipes = [makeRecipe({ imageKeys: ['test-job/photo1.jpg', 'test-job/photo2.jpg'] })];
+      await adapter.render(toChapters(recipes), { ...defaultOptions, imageMode: 'none' }, '/tmp/test.pdf');
+
+      expect(imageCalls).toHaveLength(0);
+      const placeholders = capturedTexts.filter((t) => t === 'Source image not available');
+      expect(placeholders).toHaveLength(0);
+    });
+
+    it('thumbnail mode: renders multiple images in sequence', async () => {
+      const { existsSync } = jest.requireMock<{ existsSync: jest.Mock }>('node:fs');
+      existsSync.mockReturnValue(true);
+      openImageFn = () => ({ width: 400, height: 300 });
+
+      const recipes = [makeRecipe({ imageKeys: ['test-job/a.jpg', 'test-job/b.jpg', 'test-job/c.jpg'] })];
+      await adapter.render(toChapters(recipes), { ...defaultOptions, imageMode: 'thumbnail' }, '/tmp/test.pdf');
+
+      expect(imageCalls).toHaveLength(3);
+      // Each uses actual width (400 > 300, so capped at 300)
+      for (const call of imageCalls) {
+        expect(call.opts).toEqual({ width: 300 });
+      }
+    });
+
+    it('full mode: adds a page per image for multiple images', async () => {
+      const { existsSync } = jest.requireMock<{ existsSync: jest.Mock }>('node:fs');
+      existsSync.mockReturnValue(true);
+      openImageFn = () => ({ width: 800, height: 600 });
+
+      const recipes = [makeRecipe({ imageKeys: ['test-job/a.jpg', 'test-job/b.jpg', 'test-job/c.jpg'] })];
+      const pagesBefore = addPageCount;
+      await adapter.render(toChapters(recipes), { ...defaultOptions, imageMode: 'full' }, '/tmp/test.pdf');
+
+      expect(imageCalls).toHaveLength(3);
+      // At least 3 pages added for images
+      expect(addPageCount - pagesBefore).toBeGreaterThanOrEqual(3);
+    });
+
+    it('thumbnail mode: renders placeholder for missing files', async () => {
+      // existsSync defaults to false in beforeEach
+      const recipes = [makeRecipe({ imageKeys: ['test-job/missing1.jpg', 'test-job/missing2.jpg'] })];
+      await adapter.render(toChapters(recipes), { ...defaultOptions, imageMode: 'thumbnail' }, '/tmp/test.pdf');
+
+      expect(imageCalls).toHaveLength(0);
+      const placeholders = capturedTexts.filter((t) => t === 'Source image not available');
+      expect(placeholders).toHaveLength(2);
+    });
+
+    it('full mode: renders placeholder for missing files on separate pages', async () => {
+      // existsSync defaults to false in beforeEach
+      const recipes = [makeRecipe({ imageKeys: ['test-job/missing1.jpg', 'test-job/missing2.jpg'] })];
+      const pagesBefore = addPageCount;
+      await adapter.render(toChapters(recipes), { ...defaultOptions, imageMode: 'full' }, '/tmp/test.pdf');
+
+      expect(imageCalls).toHaveLength(0);
+      const placeholders = capturedTexts.filter((t) => t === 'Source image not available');
+      expect(placeholders).toHaveLength(2);
+      // Pages still added even for missing images in full mode
+      expect(addPageCount - pagesBefore).toBeGreaterThanOrEqual(2);
+    });
+
+    it('mixed existing/missing images: embeds existing, placeholder for missing', async () => {
+      const { existsSync } = jest.requireMock<{ existsSync: jest.Mock }>('node:fs');
+      // First image exists, second doesn't, third exists
+      existsSync.mockImplementation((path: string) => {
+        if (path.includes('exists1') || path.includes('exists2')) return true;
+        return false;
+      });
+      openImageFn = () => ({ width: 500, height: 400 });
+
+      const recipes = [makeRecipe({
+        imageKeys: ['test-job/exists1.jpg', 'test-job/missing.jpg', 'test-job/exists2.jpg'],
+      })];
+      await adapter.render(toChapters(recipes), { ...defaultOptions, imageMode: 'thumbnail' }, '/tmp/test.pdf');
+
+      // 2 images embedded, 1 placeholder
+      expect(imageCalls).toHaveLength(2);
+      const placeholders = capturedTexts.filter((t) => t === 'Source image not available');
+      expect(placeholders).toHaveLength(1);
     });
   });
 });

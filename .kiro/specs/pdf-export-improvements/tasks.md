@@ -225,8 +225,8 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - File: `src/adapters/outbound/pdfkit-adapter.pbt.ts`
     - **Validates: Requirements 10.4, 12.1, 12.2**
 
-- [ ] 9. Implement image embedding in PdfKitAdapter
-  - [ ] 9.1 Add image embedding logic to `renderRecipe()` in `src/adapters/outbound/pdfkit-adapter.ts`
+- [x] 9. Implement image embedding in PdfKitAdapter
+  - [x] 9.1 Add image embedding logic to `renderRecipe()` in `src/adapters/outbound/pdfkit-adapter.ts`
     - In `thumbnail` mode: embed pre-processed images inline at max 300px width, preserving aspect ratio
     - In `full` mode: embed pre-processed images on separate page at max 975px width
     - In `none` mode: no image embedding, no image reference text
@@ -234,7 +234,7 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - Render placeholder "Source image not available" in 8pt gray italic if file missing
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.6_
 
-  - [ ] 9.2 Write unit tests for image embedding
+  - [x] 9.2 Write unit tests for image embedding
     - Test thumbnail dimensions and aspect ratio preservation
     - Test full-page image rendering
     - Test placeholder rendering for missing files
