@@ -74,6 +74,13 @@ describe('exportHandler', () => {
       'grandma-cards',
       'pdf',
       './exports/grandma-cards/grandma-cards.pdf',
+      {
+        imageMode: 'thumbnail',
+        pageSize: 'letter',
+        multiPerPage: true,
+        confidenceMarkers: true,
+        chapterGrouping: true,
+      },
     );
     expect(stdoutSpy).toHaveBeenCalledWith(
       'Exported 5 recipe(s) to ./exports/grandma-cards/grandma-cards.pdf',
@@ -95,6 +102,13 @@ describe('exportHandler', () => {
       'grandma-cards',
       'obsidian',
       './exports/grandma-cards/vault/',
+      {
+        imageMode: 'thumbnail',
+        pageSize: 'letter',
+        multiPerPage: true,
+        confidenceMarkers: true,
+        chapterGrouping: true,
+      },
     );
     expect(stdoutSpy).toHaveBeenCalledWith(
       'Exported 3 recipe(s) to ./exports/grandma-cards/vault/',
@@ -115,6 +129,13 @@ describe('exportHandler', () => {
       'holiday-baking',
       'pdf',
       './exports/holiday-baking/holiday-baking.pdf',
+      {
+        imageMode: 'thumbnail',
+        pageSize: 'letter',
+        multiPerPage: true,
+        confidenceMarkers: true,
+        chapterGrouping: true,
+      },
     );
     expect(MockJobService.prototype.getActiveJob).not.toHaveBeenCalled();
   });

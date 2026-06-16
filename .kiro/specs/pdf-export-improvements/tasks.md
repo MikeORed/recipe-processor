@@ -242,22 +242,22 @@ This plan transforms the Heirloom PDF export pipeline from a flat, unstructured 
     - File: `src/adapters/outbound/pdfkit-adapter.unit.ts`
     - _Requirements: 11.1, 11.2, 11.6_
 
-- [ ] 10. Update ExportHandler with CLI options
-  - [ ] 10.1 Update `exportHandler` in `src/adapters/inbound/export-handler.ts`
+- [x] 10. Update ExportHandler with CLI options
+  - [x] 10.1 Update `exportHandler` in `src/adapters/inbound/export-handler.ts`
     - Parse new flags: `--images` (none|thumbnail|full, default: thumbnail), `--page-size` (letter|a4, default: letter), `--multi-per-page` (boolean, default: true), `--confidence` (boolean, default: true), `--no-chapters` (boolean, default: false)
     - Construct `PdfRenderOptions` object from parsed flags with correct defaults
     - Reject unrecognized option values with error message listing valid values, exit code 1
     - Pass options to `ExportService.export()` (updated signature)
     - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.3, 15.5_
 
-  - [ ] 10.2 Write property test for CLI option parsing (Property 13)
+  - [x] 10.2 Write property test for CLI option parsing (Property 13)
     - **Property 13: CLI option parsing with defaults and rejection**
     - Generate arbitrary valid flag combinations and verify correct PdfRenderOptions output
     - Generate invalid values for --images and --page-size and verify rejection
     - File: `src/adapters/inbound/export-handler.pbt.ts`
     - **Validates: Requirements 14.1, 14.2, 15.3, 15.5**
 
-- [ ] 11. Checkpoint — Ensure all tests pass
+- [x] 11. Checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 12. Integration wiring and final validation
