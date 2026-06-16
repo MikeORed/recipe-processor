@@ -70,6 +70,7 @@ export class TranscribeService {
         recipesTranscribed++;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        console.error(`  [${index}/${total}] FAILED recipe group '${recipeNumber}': ${message}`);
         errors.push({ recipeNumber, error: message });
       }
     }

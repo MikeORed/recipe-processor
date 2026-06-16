@@ -62,8 +62,10 @@ const RECIPE_OBJECT_SCHEMA = {
       description: 'The single best cookbook chapter for this recipe. Use the classification heuristic described in the prompt.',
     },
     cuisine: {
-      type: ['string', 'null'],
-      enum: [...CUISINE_ENUM, null],
+      anyOf: [
+        { type: 'string', enum: [...CUISINE_ENUM] },
+        { type: 'null' },
+      ],
       description: 'The cuisine tradition this recipe belongs to. null if unclear or not applicable.',
     },
     tags: {

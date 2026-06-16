@@ -56,6 +56,13 @@ export const transcribeHandler: CommandHandler = async (_args: string[]) => {
     console.log(
       `Done: ${result.recipesTranscribed} recipe(s) transcribed, ${result.entriesSkipped} entry(ies) skipped, ${elapsedSeconds}s elapsed`,
     );
+
+    if (result.errors.length > 0) {
+      console.error(`\n${result.errors.length} recipe group(s) failed:`);
+      for (const { recipeNumber, error } of result.errors) {
+        console.error(`  [${recipeNumber}] ${error}`);
+      }
+    }
   } catch (error: unknown) {
     if (error instanceof HeirloomError) {
       console.error(error.message);

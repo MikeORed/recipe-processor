@@ -70,7 +70,7 @@ export const FOOTER_FONT = 'Helvetica';
 
 export const SPACE_BEFORE_RECIPE_TITLE = 24;
 export const SPACE_BEFORE_SECTION_HEADING = 12;
-export const SPACE_BETWEEN_LIST_ITEMS = 6;
+export const SPACE_BETWEEN_LIST_ITEMS = 2;
 export const SPACE_AFTER_LAST_CONTENT = 4;
 
 // ─── Separator Overhead ───────────────────────────────────────────────────────
@@ -744,15 +744,28 @@ export class PdfKitAdapter implements PdfRendererPort {
       doc.font(HEADING_FONT).fontSize(SECTION_HEADING_FONT_SIZE);
       doc.text(headingText, layout.marginLeft, doc.y, { width: layout.contentWidth });
 
-      // Body items (11pt Times-Roman, 6pt between items)
+      // Body items (11pt Times-Roman, with list markers)
       doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE);
+
+      // Determine list marker style: numbered for Instructions, bullet for others
+      const isNumbered = section.heading === 'Instructions';
+      const bulletPrefix = '• ';
+      // Calculate hanging indent width
+      const bulletIndent = doc.widthOfString(bulletPrefix);
+      const numberIndent = isNumbered
+        ? doc.widthOfString(`${section.items.length}. `)
+        : 0;
+      const hangingIndent = isNumbered ? numberIndent : bulletIndent;
+      const textX = layout.marginLeft + hangingIndent;
+      const textWidth = layout.contentWidth - hangingIndent;
 
       for (let i = 0; i < section.items.length; i++) {
         const item = section.items[i];
+        const prefix = isNumbered ? `${i + 1}. ` : bulletPrefix;
 
         // Measure item height to check for overflow
         doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE);
-        const itemHeight = doc.heightOfString(item, { width: layout.contentWidth });
+        const itemHeight = doc.heightOfString(item, { width: textWidth });
         const remaining = layout.height - layout.marginBottom - doc.y;
 
         if (remaining < itemHeight) {
@@ -766,7 +779,11 @@ export class PdfKitAdapter implements PdfRendererPort {
           doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE);
         }
 
-        doc.text(item, layout.marginLeft, doc.y, { width: layout.contentWidth });
+        // Render prefix at left margin, then body text indented
+        const lineY = doc.y;
+        doc.text(prefix, layout.marginLeft, lineY, { width: hangingIndent });
+        // Reset y to same line for the body text (prefix is short, single line)
+        doc.text(item, textX, lineY, { width: textWidth });
 
         if (i < section.items.length - 1) {
           doc.y += SPACE_BETWEEN_LIST_ITEMS;
@@ -884,8 +901,8 @@ export class PdfKitAdapter implements PdfRendererPort {
    * Groups by distinct source value (alphabetical), with recipes sorted
    * alphabetically within each group.
    *
-   * Layout: 10pt bold source headings, 9pt body text for recipe titles,
-   * 6pt spacing between entries.
+   * Layout: 3-column layout, 9pt bold source headings, 8pt body text for
+   * recipe titles, 3pt spacing between entries.
    */
   private renderSourceAppendix(
     doc: PDFKit.PDFDocument,
@@ -927,62 +944,90 @@ export class PdfKitAdapter implements PdfRendererPort {
       a.source.toLowerCase().localeCompare(b.source.toLowerCase()),
     );
 
-    // Constants for compact layout
-    const SOURCE_HEADING_FONT_SIZE = 10;
-    const APPENDIX_BODY_FONT_SIZE = 9;
-    const APPENDIX_ITEM_SPACING = 6;
+    // Constants for compact 3-column layout
+    const SOURCE_HEADING_FONT_SIZE = 9;
+    const APPENDIX_BODY_FONT_SIZE = 8;
+    const APPENDIX_ITEM_SPACING = 3;
+    const APPENDIX_GROUP_SPACING = 8;
     const APPENDIX_TITLE_FONT_SIZE = 18;
+    const COLUMN_COUNT = 3;
+    const COLUMN_GUTTER = 14;
+    const columnWidth = (layout.contentWidth - COLUMN_GUTTER * (COLUMN_COUNT - 1)) / COLUMN_COUNT;
 
     // Start a new page for the appendix
     doc.addPage();
 
-    // Render "Sources" as a section title at the top
+    // Render "Sources" as a section title spanning full width
     doc.font(HEADING_FONT).fontSize(APPENDIX_TITLE_FONT_SIZE);
     doc.text('Sources', layout.marginLeft, layout.marginTop, {
       width: layout.contentWidth,
     });
-    doc.y += 12; // Space after title
 
-    // Render each source group
-    for (const group of groups) {
-      // Check if source heading fits on current page
-      doc.font(HEADING_FONT).fontSize(SOURCE_HEADING_FONT_SIZE);
-      const headingHeight = doc.heightOfString(group.source, { width: layout.contentWidth });
-      const remaining = layout.height - layout.marginBottom - doc.y;
+    const contentStartY = doc.y + 12;
+    const pageBottom = layout.height - layout.marginBottom;
 
-      if (remaining < headingHeight + APPENDIX_BODY_FONT_SIZE * 1.5) {
-        // Not enough space for heading + at least one recipe title
+    // Track current column position
+    let currentColumn = 0;
+    let columnY = contentStartY;
+
+    const getColumnX = (col: number): number =>
+      layout.marginLeft + col * (columnWidth + COLUMN_GUTTER);
+
+    const advanceColumn = (): void => {
+      currentColumn++;
+      if (currentColumn >= COLUMN_COUNT) {
+        // All columns full — new page
         doc.addPage();
+        currentColumn = 0;
+        columnY = layout.marginTop;
+      } else {
+        columnY = contentStartY;
+      }
+    };
+
+    const advanceColumnOnNewPage = (): void => {
+      currentColumn++;
+      if (currentColumn >= COLUMN_COUNT) {
+        doc.addPage();
+        currentColumn = 0;
+      }
+      columnY = layout.marginTop;
+    };
+
+    // Render each source group into the column flow
+    for (const group of groups) {
+      // Measure heading height
+      doc.font(HEADING_FONT).fontSize(SOURCE_HEADING_FONT_SIZE);
+      const headingHeight = doc.heightOfString(group.source, { width: columnWidth });
+
+      // Need room for heading + at least one recipe line
+      const minNeeded = headingHeight + APPENDIX_BODY_FONT_SIZE * 1.4;
+      if (columnY + minNeeded > pageBottom) {
+        advanceColumn();
       }
 
-      // Render source heading (10pt bold)
+      // Render source heading (bold)
+      const colX = getColumnX(currentColumn);
       doc.font(HEADING_FONT).fontSize(SOURCE_HEADING_FONT_SIZE);
-      doc.text(group.source, layout.marginLeft, doc.y, { width: layout.contentWidth });
-      doc.y += APPENDIX_ITEM_SPACING;
+      doc.text(group.source, colX, columnY, { width: columnWidth });
+      columnY = doc.y + APPENDIX_ITEM_SPACING;
 
-      // Render recipe titles (9pt body text, 6pt spacing)
+      // Render recipe titles
       doc.font(BODY_FONT).fontSize(APPENDIX_BODY_FONT_SIZE);
-      for (let i = 0; i < group.recipes.length; i++) {
-        const title = group.recipes[i].title;
+      for (const recipe of group.recipes) {
+        const titleHeight = doc.heightOfString(recipe.title, { width: columnWidth });
 
-        // Check overflow before rendering
-        const titleHeight = doc.heightOfString(title, { width: layout.contentWidth });
-        const spaceLeft = layout.height - layout.marginBottom - doc.y;
-
-        if (spaceLeft < titleHeight) {
-          doc.addPage();
+        if (columnY + titleHeight > pageBottom) {
+          advanceColumnOnNewPage();
           doc.font(BODY_FONT).fontSize(APPENDIX_BODY_FONT_SIZE);
         }
 
-        doc.text(title, layout.marginLeft, doc.y, { width: layout.contentWidth });
-
-        if (i < group.recipes.length - 1) {
-          doc.y += APPENDIX_ITEM_SPACING;
-        }
+        doc.text(recipe.title, getColumnX(currentColumn), columnY, { width: columnWidth });
+        columnY = doc.y + APPENDIX_ITEM_SPACING;
       }
 
-      // Space between source groups
-      doc.y += APPENDIX_ITEM_SPACING * 2;
+      // Extra space between source groups
+      columnY += APPENDIX_GROUP_SPACING;
     }
   }
 
@@ -1114,21 +1159,10 @@ export class PdfKitAdapter implements PdfRendererPort {
       if (ownership.type === 'recipe') {
         // Truncate header elements > 50 chars with ellipsis — Req 12.4
         const chapterText = this.truncateHeaderText(ownership.chapter, 50);
-        const recipeTitleText = this.truncateHeaderText(ownership.recipeTitle, 50);
 
-        // Left-aligned chapter name
+        // Left-aligned chapter name only
         page.drawText(chapterText, {
           x: layout.marginLeft,
-          y: headerY,
-          size: fontSize,
-          font,
-          color: footerColor,
-        });
-
-        // Right-aligned recipe title
-        const titleWidth = font.widthOfTextAtSize(recipeTitleText, fontSize);
-        page.drawText(recipeTitleText, {
-          x: layout.width - layout.marginRight - titleWidth,
           y: headerY,
           size: fontSize,
           font,
